@@ -2,8 +2,12 @@
 # Authors: Olivier Grisel and Kyle Kastner
 # License: CC0 1.0 Universal: http://creativecommons.org/publicdomain/zero/1.0/
 
+# Abort the script on any failure
+$ErrorActionPreference = "Stop"
+
 $BASE_URL = "https://www.python.org/ftp/python/"
-$GET_PIP_URL = "https://bootstrap.pypa.io/get-pip.py"
+
+$GET_PIP_URL = "http://releases.numenta.org/pip/1ebd3cb7a5a3073058d0c9552ab074bd/get-pip.py"
 $GET_PIP_PATH = "C:\get-pip.py"
 
 
@@ -61,7 +65,11 @@ function InstallPip ($python_home) {
     $pip_path = $python_home + "/Scripts/pip.exe"
     $python_path = $python_home + "/python.exe"
     if ( $(Try { Test-Path $pip_path.trim() } Catch { $false }) ) {
-        Write-Host "pip already installed at " $pip_path
+        Write-Host "pip already installed at " $pip_path ". Upgrading..."
+
+        # Upgrade it to avoid error exit code during usage
+        & $python_path -m pip install --upgrade pip
+
         return $false
     }
 
@@ -74,15 +82,23 @@ function InstallPip ($python_home) {
 }
 
 function main () {
-    InstallPython $env:PYTHON_VERSION $env:PYTHON_ARCH $env:PYTHON
-    InstallPip $env:PYTHON
+    InstallPython $env:PYTHON_VERSION $env:PYTHON_ARCH $env:PYTHONHOME
+    InstallPip $env:PYTHONHOME
 
-    $pip_path = $env:PYTHON + "/Scripts/pip.exe"
-    Write-Host "pip install " wheel
-    & $pip_path install wheel
+    $python_path = $env:PYTHONHOME + "/python.exe"
+    $pip_path = $env:PYTHONHOME + "/Scripts/pip.exe"
 
-    Write-Host "pip install " numpy==1.9.2
-    & $pip_path install -i https://pypi.numenta.com/pypi numpy==1.9.2
+    Write-Host "pip install " wheel==0.25.0
+    & $pip_path install wheel==0.25.0
+
+    Write-Host "pip install " boto
+    & $pip_path install boto
+
+    Write-Host "pip install " twine
+    & $pip_path install twine
+
+    Write-Host "pip install " numpy==1.11.2
+    & $pip_path install numpy==1.11.2
 }
 
 main

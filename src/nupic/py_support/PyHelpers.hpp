@@ -70,6 +70,9 @@
 //   to a Python float. It provides a constructor and conversion operator.
 //   Python has just one floating point type (not including numpy and 
 //   the complex type).
+//
+// Bool:
+//   A boolean class that maps a C bool to a Python bool.
 // 
 // String: 
 //   A string type that maps to the Python string and provides
@@ -219,6 +222,15 @@ namespace nupic { namespace py
     static double getMin();
   };
 
+  // Bool
+  class Bool : public Ptr
+  {
+  public:
+    Bool(bool b);
+    Bool(PyObject * p);
+    operator bool();
+  };
+
   // Tuple
   class Tuple : public Ptr
   {
@@ -287,12 +299,12 @@ namespace nupic { namespace py
     // This code is identical to Instance::invoke
     PyObject * invoke(std::string method, 
                       PyObject * args,
-                      PyObject * kwargs = NULL);
+                      PyObject * kwargs = NULL) const;
     // Get an module attribute. Equivalent to:
     //
     // return module.name
     // This code is identical to Instance::getAttr
-    PyObject * getAttr(std::string name);
+    PyObject * getAttr(std::string name) const;
   private:
     PyObject * createModule_(const std::string & moduleName);
   };
@@ -350,7 +362,7 @@ namespace nupic { namespace py
     // Get an instance attribute. Equivalent to:
     //
     // return instance.name
-    PyObject * getAttr(std::string name);
+    PyObject * getAttr(std::string name) const;
 
     // Set an instance attribute. Equivalent to:
     //
@@ -367,7 +379,7 @@ namespace nupic { namespace py
     // return instance.method(*args, **kwargs)
     PyObject * invoke(std::string method, 
                       PyObject * args,
-                      PyObject * kwargs = NULL);
+                      PyObject * kwargs = NULL) const;
   private:
     PyObject * createInstance_(PyObject * pClass,
                                PyObject * args,

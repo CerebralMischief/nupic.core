@@ -52,6 +52,7 @@ namespace nupic
     
     PyRegion(const char * module, const ValueMap & nodeParams, Region * region, const char* className="");
     PyRegion(const char * module, BundleIO& bundle, Region * region, const char* className="");
+    PyRegion(const char * module, capnp::AnyPointer::Reader& proto, Region * region, const char* className="");
     virtual ~PyRegion();
 
     // DynamicPythonLibrary functions. Originally used NTA_EXPORT
@@ -61,18 +62,23 @@ namespace nupic
       void * region, void ** exception, const char* className="");
     static void * NTA_deserializePyNode(const char * module, void * bundle,
       void * region, void ** exception, const char* className="");
+    static void * NTA_deserializePyNodeProto(const char * module, void * proto,
+      void * region, void ** exception, const char* className="");
     static const char * NTA_getLastError();
     static void * NTA_createSpec(const char * nodeType, void ** exception, const char* className="");
     static int NTA_destroySpec(const char * nodeType, const char* className="");
 
     // Manual serialization methods. Current recommended method.
-    void serialize(BundleIO& bundle);
-    void deserialize(BundleIO& bundle);
+    void serialize(BundleIO& bundle) override;
+    void deserialize(BundleIO& bundle) override;
 
     // Capnp serialization methods - not yet implemented for PyRegions. This
     // method will replace serialize/deserialize once fully implemented
     // throughout codebase.
+    using RegionImpl::write;
     void write(capnp::AnyPointer::Builder& proto) const override;
+
+    using RegionImpl::read;
     void read(capnp::AnyPointer::Reader& proto) override;
 
     const Spec & getSpec();
@@ -81,38 +87,64 @@ namespace nupic
 
     // RegionImpl interface
     
-    size_t getNodeOutputElementCount(const std::string& outputName);
-    void getParameterFromBuffer(const std::string& name, Int64 index, IWriteBuffer& value);
-    void setParameterFromBuffer(const std::string& name, Int64 index, IReadBuffer& value);
+    size_t getNodeOutputElementCount(const std::string& outputName) override;
+    void getParameterFromBuffer(const std::string& name, Int64 index, IWriteBuffer& value) override;
+    void setParameterFromBuffer(const std::string& name, Int64 index, IReadBuffer& value) override;
 
-    void initialize();
-    void compute();
-    std::string executeCommand(const std::vector<std::string>& args, Int64 index);
+    void initialize() override;
+    void compute() override;
+    std::string executeCommand(
+        const std::vector<std::string>& args, Int64 index) override;
 
-    size_t getParameterArrayCount(const std::string& name, Int64 index);
+    size_t getParameterArrayCount(const std::string& name, Int64 index)
+        override;
 
     virtual Byte getParameterByte(const std::string& name, Int64 index);
-    virtual Int32 getParameterInt32(const std::string& name, Int64 index);
-    virtual UInt32 getParameterUInt32(const std::string& name, Int64 index);
-    virtual Int64 getParameterInt64(const std::string& name, Int64 index);
-    virtual UInt64 getParameterUInt64(const std::string& name, Int64 index);
-    virtual Real32 getParameterReal32(const std::string& name, Int64 index);
-    virtual Real64 getParameterReal64(const std::string& name, Int64 index);
-    virtual Handle getParameterHandle(const std::string& name, Int64 index);
-    virtual std::string getParameterString(const std::string& name, Int64 index);
+    virtual Int32 getParameterInt32(const std::string& name, Int64 index)
+        override;
+    virtual UInt32 getParameterUInt32(const std::string& name, Int64 index)
+        override;
+    virtual Int64 getParameterInt64(const std::string& name, Int64 index)
+        override;
+    virtual UInt64 getParameterUInt64(const std::string& name, Int64 index)
+        override;
+    virtual Real32 getParameterReal32(const std::string& name, Int64 index)
+        override;
+    virtual Real64 getParameterReal64(const std::string& name, Int64 index)
+        override;
+    virtual Handle getParameterHandle(const std::string& name, Int64 index)
+        override;
+    virtual bool getParameterBool(const std::string& name, Int64 index)
+        override;
+    virtual std::string getParameterString(
+        const std::string& name, Int64 index) override;
 
-    virtual void setParameterByte(const std::string& name, Int64 index, Byte value);
-    virtual void setParameterInt32(const std::string& name, Int64 index, Int32 value);
-    virtual void setParameterUInt32(const std::string& name, Int64 index, UInt32 value);
-    virtual void setParameterInt64(const std::string& name, Int64 index, Int64 value);
-    virtual void setParameterUInt64(const std::string& name, Int64 index, UInt64 value);
-    virtual void setParameterReal32(const std::string& name, Int64 index, Real32 value);
-    virtual void setParameterReal64(const std::string& name, Int64 index, Real64 value);
-    virtual void setParameterHandle(const std::string& name, Int64 index, Handle value);
-    virtual void setParameterString(const std::string& name, Int64 index, const std::string& value);
+    virtual void setParameterByte(
+        const std::string& name, Int64 index, Byte value);
+    virtual void setParameterInt32(
+        const std::string& name, Int64 index, Int32 value) override;
+    virtual void setParameterUInt32(
+        const std::string& name, Int64 index, UInt32 value) override;
+    virtual void setParameterInt64(
+        const std::string& name, Int64 index, Int64 value) override;
+    virtual void setParameterUInt64(
+        const std::string& name, Int64 index, UInt64 value) override;
+    virtual void setParameterReal32(
+        const std::string& name, Int64 index, Real32 value) override;
+    virtual void setParameterReal64(
+        const std::string& name, Int64 index, Real64 value) override;
+    virtual void setParameterHandle(
+        const std::string& name, Int64 index, Handle value) override;
+    virtual void setParameterBool(
+        const std::string& name, Int64 index, bool value) override;
+    virtual void setParameterString(
+        const std::string& name, Int64 index, const std::string& value)
+        override;
     
-    virtual void getParameterArray(const std::string& name, Int64 index, Array & array);
-    virtual void setParameterArray(const std::string& name, Int64 index, const Array & array);
+    virtual void getParameterArray(
+        const std::string& name, Int64 index, Array & array) override;
+    virtual void setParameterArray(
+        const std::string& name, Int64 index, const Array & array) override;
 
     // Helper methods
     template <typename T, typename PyT>

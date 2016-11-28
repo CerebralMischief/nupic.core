@@ -77,6 +77,7 @@ namespace nupic
   private:
     friend std::ostream& operator<<(std::ostream& outStream, const RandomImpl& r);
     friend std::istream& operator>>(std::istream& inStream, RandomImpl& r);
+    const static UInt32 VERSION = 2;
     // internal state
     static const int stateSize_ = 31;
     static const int sep_ = 3;
@@ -94,16 +95,6 @@ Random::Random(const Random& r)
   impl_ = new RandomImpl(*r.impl_);
 }
 
-void Random::write(std::ostream& stream) const
-{
-  capnp::MallocMessageBuilder message;
-  auto proto = message.initRoot<RandomProto>();
-  write(proto);
-
-  kj::std::StdOutputStream out(stream);
-  capnp::writeMessage(out, message);
-}
-
 void Random::write(RandomProto::Builder& proto) const
 {
   // save Random state
@@ -112,14 +103,6 @@ void Random::write(RandomProto::Builder& proto) const
   // save RandomImpl state
   auto implProto = proto.initImpl();
   impl_->write(implProto);
-}
-
-void Random::read(std::istream& stream)
-{
-  kj::std::StdInputStream in(stream);
-  capnp::InputStreamMessageReader message(in);
-  RandomProto::Reader proto = message.getRoot<RandomProto>();
-  read(proto);
 }
 
 void Random::read(RandomProto::Reader& proto)
@@ -303,8 +286,9 @@ RandomImpl::RandomImpl(UInt64 seed)
      *
      *	2^31-1 (prime) = 2147483647 = 127773*16807+2836
      */
-    ldiv_t val = ldiv(state_[i-1], 127773);
-    long test = 16807 * val.rem - 2836 * val.quot;
+    Int32 quot = state_[i-1] / 127773;
+    Int32 rem = state_[i-1] % 127773;
+    Int32 test = 16807 * rem - 2836 * quot;
     state_[i] = (UInt32)((test + (test < 0 ? 2147483647 : 0)) % Random::MAX32);
   }
   fptr_ = sep_;
@@ -394,10 +378,12 @@ namespace nupic
 
   std::ostream& operator<<(std::ostream& outStream, const RandomImpl& r)
   {
-    outStream << "randomimpl-v1 ";
+    outStream << "RandomImpl " << RandomImpl::VERSION << " ";
     outStream << RandomImpl::stateSize_ << " ";
     for (auto & elem : r.state_)
+    {
       outStream << elem << " ";
+    }
     outStream << r.rptr_ << " ";
     outStream << r.fptr_;
     return outStream;
@@ -405,19 +391,44 @@ namespace nupic
 
   std::istream& operator>>(std::istream& inStream, RandomImpl& r)
   {
-    std::string version;
-    inStream >> version;
-    if (version != "randomimpl-v1")
+    std::string marker;
+    inStream >> marker;
+    UInt32 version;
+    if (marker == "RandomImpl")
     {
-      NTA_THROW << "RandomImpl() deserializer -- found unexpected version string '"
-                << version << "'";
+      inStream >> version;
+      if (version != 2)
+      {
+        NTA_THROW << "RandomImpl deserialization found unexpected version: "
+                  << version;
+      }
+    }
+    else if (marker == "randomimpl-v1")
+    {
+      version = 1;
+    }
+    else
+    {
+      NTA_THROW << "RandomImpl() deserializer -- found unexpected version "
+                << "string '" << marker << "'";
     }
     UInt32 ss = 0;
     inStream >> ss;
     NTA_CHECK(ss == (UInt32)RandomImpl::stateSize_) << " ss = " << ss;
 
+    int tmp;
     for (auto & elem : r.state_)
-      inStream >> elem;
+    {
+      if (version < 2)
+      {
+        inStream >> tmp;
+        elem = (UInt32)tmp;
+      }
+      else
+      {
+        inStream >> elem;
+      }
+    }
     inStream >> r.rptr_;
     inStream >> r.fptr_;
     return inStream;

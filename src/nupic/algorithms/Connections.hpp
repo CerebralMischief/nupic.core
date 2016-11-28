@@ -1,6 +1,6 @@
 /* ---------------------------------------------------------------------
  * Numenta Platform for Intelligent Computing (NuPIC)
- * Copyright (C) 2014, Numenta, Inc.  Unless you have an agreement
+ * Copyright (C) 2014-2016, Numenta, Inc.  Unless you have an agreement
  * with Numenta, Inc., for a separate license for this software code, the
  * following terms and conditions apply:
  *
@@ -31,11 +31,10 @@
 #include <utility>
 #include <vector>
 
+#include <nupic/types/Serializable.hpp>
 #include <nupic/types/Types.hpp>
 #include <nupic/math/Math.hpp>
 #include <nupic/proto/ConnectionsProto.capnp.h>
-
-using namespace std;
 
 namespace nupic
 {
@@ -51,53 +50,24 @@ namespace nupic
       typedef Real32 Permanence;
       typedef UInt64 Iteration;
 
-      // Defaults
-      static const UInt16 MAX_SEGMENTS_PER_CELL = 255;
-      static const UInt16 MAX_SYNAPSES_PER_SEGMENT = 255;
-
       /**
-       * Cell class used in Connections.
+       * Segment struct used by Connections consumers.
        *
        * @b Description
-       * The Cell class is a data structure that points to a particular cell.
+       * The Segment struct is used to refer to a segment. It contains a path to
+       * a SegmentData.
        *
-       * @param idx Index of cell.
-       *
-       */
-      struct Cell
-      {
-        CellIdx idx;
-
-        Cell(CellIdx idx) : idx(idx) {}
-        Cell() {}
-
-        bool operator==(const Cell &other) const;
-        bool operator<=(const Cell &other) const;
-        bool operator<(const Cell &other) const;
-        bool operator>=(const Cell &other) const;
-        bool operator>(const Cell &other) const;
-      };
-
-      /**
-       * Segment class used in Connections.
-       *
-       * @b Description
-       * The Segment class is a data structure that points to a particular
-       * segment on a particular cell.
-       *
-       * @param idx     Index of segment.
-       * @param cellIdx Index of cell.
-       *
+       * @param flatIdx This segment's index in flattened lists of all segments.
        */
       struct Segment
       {
-        SegmentIdx idx;
-        Cell cell;
+        UInt32 flatIdx;
 
-        Segment(SegmentIdx idx, Cell cell) : idx(idx), cell(std::move(cell)) {}
-        Segment() {}
+        // Use Segments as vector indices.
+        operator unsigned long() const { return flatIdx; };
 
-        bool operator==(const Segment &other) const;
+      private:
+        // The flatIdx ordering is not meaningful.
         bool operator<=(const Segment &other) const;
         bool operator<(const Segment &other) const;
         bool operator>=(const Segment &other) const;
@@ -105,94 +75,120 @@ namespace nupic
       };
 
       /**
-       * Synapse class used in Connections.
+       * Synapse struct used by Connections consumers.
        *
-       * @b Description
-       * The Synapse class is a data structure that points to a particular
-       * synapse on a particular segment on a particular cell.
+       * The Synapse struct is used to refer to a synapse. It contains a path to
+       * a SynapseData.
        *
-       * @param idx        Index of synapse in segment.
-       * @param segmentIdx Index of segment in cell.
-       * @param cellIdx    Index of cell.
-       *
+       * @param flatIdx This synapse's index in flattened lists of all synapses.
        */
       struct Synapse
       {
-        SynapseIdx idx;
-        Segment segment;
+        UInt32 flatIdx;
 
-        Synapse(SynapseIdx idx, Segment segment) : idx(idx), segment(std::move(segment)) {}
-        Synapse() {}
+        // Use Synapses as vector indices.
+        operator unsigned long() const { return flatIdx; };
 
-        bool operator==(const Synapse &other) const;
+      private:
+        // The flatIdx ordering is not meaningful.
+        bool operator<=(const Synapse &other) const;
+        bool operator<(const Synapse &other) const;
+        bool operator>=(const Synapse &other) const;
+        bool operator>(const Synapse &other) const;
       };
 
       /**
        * SynapseData class used in Connections.
        *
        * @b Description
-       * The SynapseData class is a data structure that contains the data for a
-       * synapse on a segment.
+       * The SynapseData contains the underlying data for a synapse.
        *
-       * @param presynapticCellIdx Cell that this synapse gets input from.
-       * @param permanence         Permanence of synapse.
-       * @param destroyed          Whether this synapse has been destroyed.
+       * @param presynapticCellIdx
+       * Cell that this synapse gets input from.
        *
+       * @param permanence
+       * Permanence of synapse.
        */
       struct SynapseData
       {
-        Cell presynapticCell;
+        CellIdx presynapticCell;
         Permanence permanence;
-        bool destroyed;
+        Segment segment;
       };
 
       /**
        * SegmentData class used in Connections.
        *
        * @b Description
-       * The SegmentData class is a data structure that contains the data for a
-       * segment on a cell.
+       * The SegmentData contains the underlying data for a Segment.
        *
-       * @param synapses          Data for synapses that this segment contains.
-       * @param destroyed         Whether this segment has been destroyed.
-       * @param lastUsedIteration The iteration that this segment was last used at.
+       * @param synapses
+       * Synapses on this segment.
        *
+       * @param lastUsedIteration
+       * The iteration that this segment was last used.
+       *
+       * @param cell
+       * The cell that this segment is on.
        */
       struct SegmentData
       {
-        std::vector<SynapseData> synapses;
-        bool destroyed;
+        std::vector<Synapse> synapses;
         Iteration lastUsedIteration;
+        CellIdx cell;
       };
 
       /**
        * CellData class used in Connections.
        *
        * @b Description
-       * The CellData class is a data structure that contains the data for a
-       * cell.
+       * The CellData contains the underlying data for a Cell.
        *
-       * @param segments Data for segments that this cell contains.
+       * @param segments
+       * Segments on this cell.
        *
        */
       struct CellData
       {
-        std::vector<SegmentData> segments;
+        std::vector<Segment> segments;
       };
 
       /**
-       * Activity class used in Connections.
+       * A base class for Connections event handlers.
        *
        * @b Description
-       * The Activity class is a data structure that represents the
-       * activity of a collection of cells, as computed by propagating
-       * input through connections.
-       *
+       * This acts as a plug-in point for logging / visualizations.
        */
-      struct Activity
+      class ConnectionsEventHandler
       {
-        std::map< Cell, std::vector<Segment> > activeSegmentsForCell;
-        std::map<Segment, SynapseIdx> numActiveSynapsesForSegment;
+      public:
+        virtual ~ConnectionsEventHandler() {}
+
+        /**
+         * Called after a segment is created.
+         */
+        virtual void onCreateSegment(Segment segment) {}
+
+        /**
+         * Called before a segment is destroyed.
+         */
+        virtual void onDestroySegment(Segment segment) {}
+
+        /**
+         * Called after a synapse is created.
+         */
+        virtual void onCreateSynapse(Synapse synapse) {}
+
+        /**
+         * Called before a synapse is destroyed.
+         */
+        virtual void onDestroySynapse(Synapse synapse) {}
+
+        /**
+         * Called before a synapse's permanence is changed.
+         */
+        virtual void onUpdateSynapsePermanence(Synapse synapse,
+                                               Permanence permanence) {}
       };
 
       /**
@@ -204,11 +200,11 @@ namespace nupic
        * learning algorithms to store and access data related to the
        * connectivity of cells.
        *
-       * It's main utility is to provide a common, optimized data structure
+       * Its main utility is to provide a common, optimized data structure
        * that all HTM learning algorithms can use. It is flexible enough to
        * support any learning algorithm that operates on a collection of cells.
        *
-       * Each type of connection (proximal, distal, apical) should be
+       * Each type of connection (proximal, distal basal, apical) should be
        * represented by a different instantiation of this class. This class
        * will help compute the activity along those connections due to active
        * input cells. The responsibility for what effect that activity has on
@@ -217,11 +213,17 @@ namespace nupic
        * This class is optimized to store connections between cells, and
        * compute the activity of cells due to input over the connections.
        *
+       * This class assigns each segment a unique "flatIdx" so that it's
+       * possible to use a simple vector to associate segments with values.
+       * Create a vector of length `connections.segmentFlatListLength()`,
+       * iterate over segments and update the vector at index `segment.flatIdx`,
+       * and then recover the segments using `connections.segmentForFlatIdx(i)`.
+       *
        */
-      class Connections
+      class Connections : public Serializable<ConnectionsProto>
       {
       public:
-        static const UInt16 VERSION = 1;
+        static const UInt16 VERSION = 2;
 
         /**
          * Connections empty constructor.
@@ -237,8 +239,8 @@ namespace nupic
          * @param maxSynapsesPerSegment Maximum number of synapses per segment.
          */
         Connections(CellIdx numCells,
-                    SegmentIdx maxSegmentsPerCell=MAX_SEGMENTS_PER_CELL,
-                    SynapseIdx maxSynapsesPerSegment=MAX_SYNAPSES_PER_SEGMENT);
+                    SegmentIdx maxSegmentsPerCell=255,
+                    SynapseIdx maxSynapsesPerSegment=255);
 
         virtual ~Connections() {}
 
@@ -260,7 +262,7 @@ namespace nupic
          *
          * @retval Created segment.
          */
-        Segment createSegment(const Cell& cell);
+        Segment createSegment(CellIdx cell);
 
         /**
          * Creates a synapse on the specified segment.
@@ -271,8 +273,8 @@ namespace nupic
          *
          * @reval Created synapse.
          */
-        Synapse createSynapse(const Segment& segment,
-                              const Cell& presynapticCell,
+        Synapse createSynapse(Segment segment,
+                              CellIdx presynapticCell,
                               Permanence permanence);
 
         /**
@@ -280,14 +282,14 @@ namespace nupic
          *
          * @param segment Segment to destroy.
          */
-        void destroySegment(const Segment& segment);
+        void destroySegment(Segment segment);
 
         /**
          * Destroys synapse.
          *
          * @param synapse Synapse to destroy.
          */
-        void destroySynapse(const Synapse& synapse);
+        void destroySynapse(Synapse synapse);
 
         /**
          * Updates a synapse's permanence.
@@ -295,7 +297,7 @@ namespace nupic
          * @param synapse    Synapse to update.
          * @param permanence New permanence.
          */
-        void updateSynapsePermanence(const Synapse& synapse,
+        void updateSynapsePermanence(Synapse synapse,
                                      Permanence permanence);
 
         /**
@@ -305,7 +307,7 @@ namespace nupic
          *
          * @retval Segments on cell.
          */
-        std::vector<Segment> segmentsForCell(const Cell& cell) const;
+        const std::vector<Segment>& segmentsForCell(CellIdx cell) const;
 
         /**
          * Gets the synapses for a segment.
@@ -314,7 +316,25 @@ namespace nupic
          *
          * @retval Synapses on segment.
          */
-        std::vector<Synapse> synapsesForSegment(const Segment& segment);
+        const std::vector<Synapse>& synapsesForSegment(Segment segment) const;
+
+        /**
+         * Gets the cell that this segment is on.
+         *
+         * @param segment Segment to get the cell for.
+         *
+         * @retval Cell that this segment is on.
+         */
+        CellIdx cellForSegment(Segment segment) const;
+
+        /**
+         * Gets the segment that this synapse is on.
+         *
+         * @param synapse Synapse to get Segment for.
+         *
+         * @retval Segment that this synapse is on.
+         */
+        Segment segmentForSynapse(Synapse synapse) const;
 
         /**
          * Gets the data for a segment.
@@ -323,7 +343,7 @@ namespace nupic
          *
          * @retval Segment data.
          */
-        SegmentData dataForSegment(const Segment& segment) const;
+        const SegmentData& dataForSegment(Segment segment) const;
 
         /**
          * Gets the data for a synapse.
@@ -332,111 +352,163 @@ namespace nupic
          *
          * @retval Synapse data.
          */
-        SynapseData dataForSynapse(const Synapse& synapse) const;
+        const SynapseData& dataForSynapse(Synapse synapse) const;
+
+        /**
+         * Get the segment at the specified cell and offset.
+         *
+         * @param cell The cell that the segment is on.
+         * @param idx The index of the segment on the cell.
+         *
+         * @retval Segment
+         */
+        Segment getSegment(CellIdx cell, SegmentIdx idx) const;
+
+        /**
+         * Do a reverse-lookup of a segment from its flatIdx.
+         *
+         * @param flatIdx the flatIdx of the segment
+         *
+         * @retval Segment
+         */
+        Segment segmentForFlatIdx(UInt32 flatIdx) const;
+
+        /**
+         * Get the vector length needed to use the segments' flatIdx for
+         * indexing.
+         *
+         * @retval A vector length
+         */
+        UInt32 segmentFlatListLength() const;
+
+        /**
+         * Compare two segments. Returns true if a < b.
+         *
+         * Segments are ordered first by cell, then by their order on the cell.
+         *
+         * @param a Left segment to compare
+         * @param b Right segment to compare
+         *
+         * @retval true if a < b, false otherwise.
+         */
+        bool compareSegments(Segment a, Segment b) const;
 
         /**
          * Returns the synapses for the source cell that they synapse on.
          *
          * @param presynapticCell(int) Source cell index
          *
-         * @return (set)Synapse indices
+         * @return Synapse indices
          */
-        std::vector<Synapse> synapsesForPresynapticCell(const Cell& presynapticCell) const;
+        std::vector<Synapse> synapsesForPresynapticCell(CellIdx presynapticCell)
+          const;
 
         /**
-         * Gets the segment with the most active synapses due to given input,
-         * from among all the segments on all the given cells.
+         * Compute the segment excitations for a vector of active presynaptic
+         * cells.
          *
-         * @param cells            Cells to look among.
-         * @param input            Active cells in the input.
-         * @param synapseThreshold Only consider segments with number of active synapses greater than this threshold.
-         * @param retSegment       Segment to return.
+         * The output vectors aren't grown or cleared. They must be
+         * preinitialized with the length returned by
+         * getSegmentFlatVectorLength().
          *
-         * @retval Segment found?
+         * @param numActiveConnectedSynapsesForSegment
+         * An output vector for active connected synapse counts per segment.
+         *
+         * @param numActivePotentialSynapsesForSegment
+         * An output vector for active potential synapse counts per segment.
+         *
+         * @param activePresynapticCells
+         * Active cells in the input.
+         *
+         * @param connectedPermanence
+         * Minimum permanence for a synapse to be "connected".
          */
-        bool mostActiveSegmentForCells(const std::vector<Cell>& cells,
-                                       std::vector<Cell> input,
-                                       SynapseIdx synapseThreshold,
-                                       Segment& retSegment) const;
+        void computeActivity(
+          std::vector<UInt32>& numActiveConnectedSynapsesForSegment,
+          std::vector<UInt32>& numActivePotentialSynapsesForSegment,
+          const std::vector<CellIdx>& activePresynapticCells,
+          Permanence connectedPermanence) const;
 
         /**
-         * Gets the segment that was least recently used from among all the
-         * segments on the given cell.
+         * Compute the segment excitations for a single active presynaptic cell.
          *
-         * @param cell       Cell whose segments to consider.
-         * @param retSegment Segment to return.
+         * The output vectors aren't grown or cleared. They must be
+         * preinitialized with the length returned by
+         * getSegmentFlatVectorLength().
          *
-         * @retval False if cell has no segments.
+         * @param numActiveConnectedSynapsesForSegment
+         * An output vector for active connected synapse counts per segment.
+         *
+         * @param numActivePotentialSynapsesForSegment
+         * An output vector for active potential synapse counts per segment.
+         *
+         * @param activePresynapticCells
+         * Active cells in the input.
+         *
+         * @param connectedPermanence
+         * Minimum permanence for a synapse to be "connected".
          */
-        bool leastRecentlyUsedSegment(const Cell& cell,
-                                      Segment& retSegment) const;
+        void computeActivity(
+          std::vector<UInt32>& numActiveConnectedSynapsesForSegment,
+          std::vector<UInt32>& numActivePotentialSynapsesForSegment,
+          CellIdx activePresynapticCell,
+          Permanence connectedPermanence) const;
 
         /**
-         * Forward-propagates input to synapses, dendrites, and cells, to
-         * compute their activity.
+         * Record the fact that a segment had some activity. This information is
+         * used during segment cleanup.
          *
-         * @param input               Active cells in the input.
-         * @param permanenceThreshold Only consider synapses with permanences greater than this threshold.
-         * @param synapseThreshold    Only consider segments with number of active synapses greater than this threshold.
-         *
-         * @retval Activity to return.
+         * @param segment
+         * The segment that had some activity.
          */
-        Activity computeActivity(const std::vector<Cell>& input,
-                                 Permanence permanenceThreshold,
-                                 SynapseIdx synapseThreshold,
-                                 bool recordIteration=true);
+        void recordSegmentActivity(Segment segment);
 
         /**
-         * Gets the active segments from activity.
-         *
-         * @param activity Activity.
-         *
-         * @retval Active segments.
+         * Mark the passage of time. This information is used during segment
+         * cleanup.
          */
-        std::vector<Segment> activeSegments(const Activity& activity);
-
-        /**
-         * Gets the active cells from activity.
-         *
-         * @param activity Activity.
-         *
-         * @retval Active cells.
-         */
-        std::vector<Cell> activeCells(const Activity& activity);
+        void startNewIteration();
 
         // Serialization
 
         /**
          * Saves serialized data to output stream.
          */
-        virtual void save(ostream& outStream) const;
+        virtual void save(std::ostream& outStream) const;
 
         /**
          * Writes serialized data to output stream.
          */
-        virtual void write(ostream& stream) const;
+        using Serializable::write;
 
         /**
          * Writes serialized data to proto object.
          */
-        virtual void write(ConnectionsProto::Builder& proto) const;
+        virtual void write(ConnectionsProto::Builder& proto) const override;
 
         /**
          * Loads serialized data from input stream.
          */
-        virtual void load(istream& inStream);
+        virtual void load(std::istream& inStream);
 
         /**
          * Reads serialized data from input stream.
          */
-        virtual void read(istream& stream);
+        using Serializable::read;
 
         /**
          * Reads serialized data from proto object.
          */
-        virtual void read(ConnectionsProto::Reader& proto);
+        virtual void read(ConnectionsProto::Reader& proto) override;
 
         // Debugging
+
+        /**
+         * Gets the number of cells.
+         *
+         * @retval Number of cells.
+         */
+        CellIdx numCells() const;
 
         /**
          * Gets the number of segments.
@@ -446,6 +518,13 @@ namespace nupic
         UInt numSegments() const;
 
         /**
+         * Gets the number of segments on a cell.
+         *
+         * @retval Number of segments.
+         */
+        UInt numSegments(CellIdx cell) const;
+
+        /**
          * Gets the number of synapses.
          *
          * @retval Number of synapses.
@@ -453,19 +532,107 @@ namespace nupic
         UInt numSynapses() const;
 
         /**
+         * Gets the number of synapses on a segment.
+         *
+         * @retval Number of synapses.
+         */
+        UInt numSynapses(Segment segment) const;
+
+        /**
          * Comparison operator.
          */
         bool operator==(const Connections &other) const;
 
+        /**
+         * Add a connections events handler.
+         *
+         * The Connections instance takes ownership of the eventHandlers
+         * object. Don't delete it. When calling from Python, call
+         * eventHandlers.__disown__() to avoid garbage-collecting the object
+         * while this instance is still using it. It will be deleted on
+         * `unsubscribe`.
+         *
+         * @param handler
+         * An object implementing the ConnectionsEventHandler interface
+         *
+         * @retval Unsubscribe token
+         */
+        UInt32 subscribe(ConnectionsEventHandler* handler);
+
+        /**
+         * Remove an event handler.
+         *
+         * @param token
+         * The return value of `subscribe`.
+         */
+        void unsubscribe(UInt32 token);
+
+      protected:
+
+        /**
+         * Gets the segment that was least recently used from among all the
+         * segments on the given cell.
+         *
+         * @param cell Cell whose segments to consider.
+         *
+         * @retval The least recently used segment.
+         */
+        Segment leastRecentlyUsedSegment_(CellIdx cell) const;
+
+        /**
+         * Gets the synapse with the lowest permanence on the segment.
+         *
+         * @param segment Segment whose synapses to consider.
+         *
+         * @retval Synapse with the lowest permanence.
+         */
+        Synapse minPermanenceSynapse_(Segment segment) const;
+
+        /**
+         * Check whether this segment still exists on its cell.
+         *
+         * @param Segment
+         *
+         * @retval True if it's still in its cell's segment list.
+         */
+        bool segmentExists_(Segment segment) const;
+
+        /**
+         * Check whether this synapse still exists on its segment.
+         *
+         * @param Synapse
+         *
+         * @retval True if it's still in its segment's synapse list.
+         */
+        bool synapseExists_(Synapse synapse) const;
+
+        /**
+         * Remove a synapse from synapsesForPresynapticCell_.
+         *
+         * @param Synapse
+         */
+        void removeSynapseFromPresynapticMap_(Synapse synapse);
+
       private:
         std::vector<CellData> cells_;
-        // Mapping (presynaptic cell => synapses) used in forward propagation
-        std::map< Cell, std::vector<Synapse> > synapsesForPresynapticCell_;
-        UInt numSegments_;
-        UInt numSynapses_;
+        std::vector<SegmentData> segments_;
+        std::vector<Segment> destroyedSegments_;
+        std::vector<SynapseData> synapses_;
+        std::vector<Synapse> destroyedSynapses_;
+
+        // Extra bookkeeping for faster computing of segment activity.
+        std::map<CellIdx, std::vector<Synapse> > synapsesForPresynapticCell_;
+
+        std::vector<UInt64> segmentOrdinals_;
+        std::vector<UInt64> synapseOrdinals_;
+        UInt64 nextSegmentOrdinal_;
+        UInt64 nextSynapseOrdinal_;
+
         SegmentIdx maxSegmentsPerCell_;
         SynapseIdx maxSynapsesPerSegment_;
         Iteration iteration_;
+        UInt32 nextEventToken_;
+        std::map<UInt32, ConnectionsEventHandler*> eventHandlers_;
       }; // end class Connections
 
     } // end namespace connections

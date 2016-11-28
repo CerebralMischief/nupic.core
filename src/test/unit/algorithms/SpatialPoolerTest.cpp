@@ -32,52 +32,35 @@
 #include <nupic/math/StlIo.hpp>
 #include <nupic/types/Types.hpp>
 #include <nupic/utils/Log.hpp>
-#include "SpatialPoolerTest.hpp"
+#include "gtest/gtest.h"
 
 using namespace std;
+using namespace nupic;
 using namespace nupic::algorithms::spatial_pooler;
 
-namespace nupic {
-
-  void SpatialPoolerTest::print_vec(UInt arr[], UInt n)
+namespace {
+  UInt countNonzero(const vector<UInt>& vec)
   {
-    for (UInt i = 0; i < n; i++) {
-      cout << arr[i] << " ";
+    UInt count = 0;
+
+    for (UInt x : vec)
+    {
+      if (x > 0)
+      {
+        count++;
+      }
     }
-    cout << endl;
+
+    return count;
   }
 
-  void SpatialPoolerTest::print_vec(Real arr[], UInt n)
-  {
-    for (UInt i = 0; i < n; i++) {
-      cout << arr[i] << " ";
-    }
-    cout << endl;
-  }
-
-  void SpatialPoolerTest::print_vec(vector<UInt> vec)
-  {
-    for (auto & elem : vec) {
-      cout << elem << " ";
-    }
-    cout << endl;
-  }
-
-  void SpatialPoolerTest::print_vec(vector<Real> vec)
-  {
-    for (auto & elem : vec) {
-      cout << elem << " ";
-    }
-    cout << endl;
-  }
-
-  bool SpatialPoolerTest::almost_eq(Real a, Real b)
+  bool almost_eq(Real a, Real b)
   {
     Real diff = a - b;
     return (diff > -1e-5 && diff < 1e-5);
   }
 
-  bool SpatialPoolerTest::check_vector_eq(UInt arr[], vector<UInt> vec)
+  bool check_vector_eq(UInt arr[], vector<UInt> vec)
   {
     for (UInt i = 0; i < vec.size(); i++) {
       if (arr[i] != vec[i]) {
@@ -87,7 +70,7 @@ namespace nupic {
     return true;
   }
 
-  bool SpatialPoolerTest::check_vector_eq(Real arr[], vector<Real> vec)
+  bool check_vector_eq(Real arr[], vector<Real> vec)
   {
     for (UInt i = 0; i < vec.size(); i++) {
       if (!almost_eq(arr[i],vec[i])) {
@@ -97,7 +80,7 @@ namespace nupic {
     return true;
   }
 
-  bool SpatialPoolerTest::check_vector_eq(UInt arr1[], UInt arr2[], UInt n)
+  bool check_vector_eq(UInt arr1[], UInt arr2[], UInt n)
   {
     for (UInt i = 0; i < n; i++) {
       if (arr1[i] != arr2[i]) {
@@ -107,7 +90,7 @@ namespace nupic {
     return true;
   }
 
-  bool SpatialPoolerTest::check_vector_eq(Real arr1[], Real arr2[], UInt n)
+  bool check_vector_eq(Real arr1[], Real arr2[], UInt n)
   {
     for (UInt i = 0; i < n; i++) {
       if (!almost_eq(arr1[i], arr2[i])) {
@@ -117,7 +100,7 @@ namespace nupic {
     return true;
   }
 
-  bool SpatialPoolerTest::check_vector_eq(vector<UInt> vec1, vector<UInt> vec2)
+  bool check_vector_eq(vector<UInt> vec1, vector<UInt> vec2)
   {
     if (vec1.size() != vec2.size()) {
       return false;
@@ -130,45 +113,45 @@ namespace nupic {
     return true;
   }
 
-  void SpatialPoolerTest::check_spatial_eq(SpatialPooler sp1, SpatialPooler sp2)
+  void check_spatial_eq(SpatialPooler sp1, SpatialPooler sp2)
   {
     UInt numColumns = sp1.getNumColumns();
     UInt numInputs = sp2.getNumInputs();
 
-    NTA_CHECK(sp1.getNumColumns() == sp2.getNumColumns());
-    NTA_CHECK(sp1.getNumInputs() == sp2.getNumInputs());
-    NTA_CHECK(sp1.getPotentialRadius() ==
+    ASSERT_TRUE(sp1.getNumColumns() == sp2.getNumColumns());
+    ASSERT_TRUE(sp1.getNumInputs() == sp2.getNumInputs());
+    ASSERT_TRUE(sp1.getPotentialRadius() ==
               sp2.getPotentialRadius());
-    NTA_CHECK(sp1.getPotentialPct() == sp2.getPotentialPct());
-    NTA_CHECK(sp1.getGlobalInhibition() ==
+    ASSERT_TRUE(sp1.getPotentialPct() == sp2.getPotentialPct());
+    ASSERT_TRUE(sp1.getGlobalInhibition() ==
               sp2.getGlobalInhibition());
-    NTA_CHECK(sp1.getNumActiveColumnsPerInhArea() ==
+    ASSERT_TRUE(sp1.getNumActiveColumnsPerInhArea() ==
               sp2.getNumActiveColumnsPerInhArea());
-    NTA_CHECK(almost_eq(sp1.getLocalAreaDensity(),
+    ASSERT_TRUE(almost_eq(sp1.getLocalAreaDensity(),
               sp2.getLocalAreaDensity()));
-    NTA_CHECK(sp1.getStimulusThreshold() ==
+    ASSERT_TRUE(sp1.getStimulusThreshold() ==
               sp2.getStimulusThreshold());
-    NTA_CHECK(sp1.getDutyCyclePeriod() == sp2.getDutyCyclePeriod());
-    NTA_CHECK(almost_eq(sp1.getMaxBoost(), sp2.getMaxBoost()));
-    NTA_CHECK(sp1.getIterationNum() == sp2.getIterationNum());
-    NTA_CHECK(sp1.getIterationLearnNum() ==
+    ASSERT_TRUE(sp1.getDutyCyclePeriod() == sp2.getDutyCyclePeriod());
+    ASSERT_TRUE(almost_eq(sp1.getMaxBoost(), sp2.getMaxBoost()));
+    ASSERT_TRUE(sp1.getIterationNum() == sp2.getIterationNum());
+    ASSERT_TRUE(sp1.getIterationLearnNum() ==
               sp2.getIterationLearnNum());
-    NTA_CHECK(sp1.getSpVerbosity() == sp2.getSpVerbosity());
-    NTA_CHECK(sp1.getWrapAround() == sp2.getWrapAround());
-    NTA_CHECK(sp1.getUpdatePeriod() == sp2.getUpdatePeriod());
-    NTA_CHECK(almost_eq(sp1.getSynPermTrimThreshold(),
+    ASSERT_TRUE(sp1.getSpVerbosity() == sp2.getSpVerbosity());
+    ASSERT_TRUE(sp1.getWrapAround() == sp2.getWrapAround());
+    ASSERT_TRUE(sp1.getUpdatePeriod() == sp2.getUpdatePeriod());
+    ASSERT_TRUE(almost_eq(sp1.getSynPermTrimThreshold(),
               sp2.getSynPermTrimThreshold()));
     cout << "check: " << sp1.getSynPermActiveInc() << " " <<
       sp2.getSynPermActiveInc() << endl;
-    NTA_CHECK(almost_eq(sp1.getSynPermActiveInc(),
+    ASSERT_TRUE(almost_eq(sp1.getSynPermActiveInc(),
               sp2.getSynPermActiveInc()));
-    NTA_CHECK(almost_eq(sp1.getSynPermInactiveDec(),
+    ASSERT_TRUE(almost_eq(sp1.getSynPermInactiveDec(),
               sp2.getSynPermInactiveDec()));
-    NTA_CHECK(almost_eq(sp1.getSynPermBelowStimulusInc(),
+    ASSERT_TRUE(almost_eq(sp1.getSynPermBelowStimulusInc(),
               sp2.getSynPermBelowStimulusInc()));
-    NTA_CHECK(almost_eq(sp1.getSynPermConnected(),
+    ASSERT_TRUE(almost_eq(sp1.getSynPermConnected(),
               sp2.getSynPermConnected()));
-    NTA_CHECK(almost_eq(sp1.getMinPctOverlapDutyCycles(),
+    ASSERT_TRUE(almost_eq(sp1.getMinPctOverlapDutyCycles(),
               sp2.getMinPctActiveDutyCycles()));
 
 
@@ -176,7 +159,7 @@ namespace nupic {
     auto boostFactors2 = new Real[numColumns];
     sp1.getBoostFactors(boostFactors1);
     sp2.getBoostFactors(boostFactors2);
-    NTA_CHECK(check_vector_eq(boostFactors1, boostFactors2, numColumns));
+    ASSERT_TRUE(check_vector_eq(boostFactors1, boostFactors2, numColumns));
     delete[] boostFactors1;
     delete[] boostFactors2;
 
@@ -184,7 +167,7 @@ namespace nupic {
     auto overlapDutyCycles2 = new Real[numColumns];
     sp1.getOverlapDutyCycles(overlapDutyCycles1);
     sp2.getOverlapDutyCycles(overlapDutyCycles2);
-    NTA_CHECK(check_vector_eq(overlapDutyCycles1, overlapDutyCycles2, numColumns));
+    ASSERT_TRUE(check_vector_eq(overlapDutyCycles1, overlapDutyCycles2, numColumns));
     delete[] overlapDutyCycles1;
     delete[] overlapDutyCycles2;
 
@@ -192,7 +175,7 @@ namespace nupic {
     auto activeDutyCycles2 = new Real[numColumns];
     sp1.getActiveDutyCycles(activeDutyCycles1);
     sp2.getActiveDutyCycles(activeDutyCycles2);
-    NTA_CHECK(check_vector_eq(activeDutyCycles1, activeDutyCycles2, numColumns));
+    ASSERT_TRUE(check_vector_eq(activeDutyCycles1, activeDutyCycles2, numColumns));
     delete[] activeDutyCycles1;
     delete[] activeDutyCycles2;
 
@@ -200,7 +183,7 @@ namespace nupic {
     auto minOverlapDutyCycles2 = new Real[numColumns];
     sp1.getMinOverlapDutyCycles(minOverlapDutyCycles1);
     sp2.getMinOverlapDutyCycles(minOverlapDutyCycles2);
-    NTA_CHECK(check_vector_eq(minOverlapDutyCycles1, minOverlapDutyCycles2, numColumns));
+    ASSERT_TRUE(check_vector_eq(minOverlapDutyCycles1, minOverlapDutyCycles2, numColumns));
     delete[] minOverlapDutyCycles1;
     delete[] minOverlapDutyCycles2;
 
@@ -208,7 +191,7 @@ namespace nupic {
     auto minActiveDutyCycles2 = new Real[numColumns];
     sp1.getMinActiveDutyCycles(minActiveDutyCycles1);
     sp2.getMinActiveDutyCycles(minActiveDutyCycles2);
-    NTA_CHECK(check_vector_eq(minActiveDutyCycles1, minActiveDutyCycles2, numColumns));
+    ASSERT_TRUE(check_vector_eq(minActiveDutyCycles1, minActiveDutyCycles2, numColumns));
     delete[] minActiveDutyCycles1;
     delete[] minActiveDutyCycles2;
 
@@ -217,7 +200,7 @@ namespace nupic {
       auto potential2 = new UInt[numInputs];
       sp1.getPotential(i, potential1);
       sp2.getPotential(i, potential2);
-      NTA_CHECK(check_vector_eq(potential1, potential2, numInputs));
+      ASSERT_TRUE(check_vector_eq(potential1, potential2, numInputs));
       delete[] potential1;
       delete[] potential2;
     }
@@ -227,7 +210,7 @@ namespace nupic {
       auto perm2 = new Real[numInputs];
       sp1.getPermanence(i, perm1);
       sp2.getPermanence(i, perm2);
-      NTA_CHECK(check_vector_eq(perm1, perm2, numInputs));
+      ASSERT_TRUE(check_vector_eq(perm1, perm2, numInputs));
       delete[] perm1;
       delete[] perm2;
     }
@@ -237,7 +220,7 @@ namespace nupic {
       auto con2 = new UInt[numInputs];
       sp1.getConnectedSynapses(i, con1);
       sp2.getConnectedSynapses(i, con2);
-      NTA_CHECK(check_vector_eq(con1, con2, numInputs));
+      ASSERT_TRUE(check_vector_eq(con1, con2, numInputs));
       delete[] con1;
       delete[] con2;
     }
@@ -246,12 +229,12 @@ namespace nupic {
     auto conCounts2 = new UInt[numColumns];
     sp1.getConnectedCounts(conCounts1);
     sp2.getConnectedCounts(conCounts2);
-    NTA_CHECK(check_vector_eq(conCounts1, conCounts2, numColumns));
+    ASSERT_TRUE(check_vector_eq(conCounts1, conCounts2, numColumns));
     delete[] conCounts1;
     delete[] conCounts2;
   }
 
-  void SpatialPoolerTest::setup(SpatialPooler& sp, UInt numInputs,
+  void setup(SpatialPooler& sp, UInt numInputs,
                                 UInt numColumns)
   {
     vector<UInt> inputDim;
@@ -261,48 +244,7 @@ namespace nupic {
     sp.initialize(inputDim,columnDim);
   }
 
-  void SpatialPoolerTest::RunTests()
-  {
-    testRaisePermanencesToThreshold();
-    testMapColumn();
-    testMapPotential1D();
-    testMapPotential2D();
-    testInitPermConnected();
-    testInitPermNonConnected();
-    testInitPermanence();
-    testUpdatePermanencesForColumn();
-    testUpdateInhibitionRadius();
-    testUpdateMinDutyCycles();
-    testUpdateMinDutyCyclesGlobal();
-    testUpdateMinDutyCyclesLocal();
-    testUpdateDutyCycles();
-    testAvgColumnsPerInput();
-    testAvgConnectedSpanForColumn1D();
-    testAvgConnectedSpanForColumn2D();
-    testAvgConnectedSpanForColumnND();
-    testAdaptSynapses();
-    testBumpUpWeakColumns();
-    testUpdateDutyCyclesHelper();
-    testUpdateBoostFactors();
-    testUpdateBookeepingVars();
-    testCalculateOverlap();
-    testCalculateOverlapPct();
-    testInhibitColumns();
-    testIsWinner();
-    testAddToWinners();
-    testInhibitColumnsGlobal();
-    testInhibitColumnsLocal();
-    testGetNeighbors1D();
-    testGetNeighbors2D();
-    testCartesianProduct();
-    testGetNeighborsND();
-    testIsUpdateRound();
-    testStripUnlearnedColumns();
-    testSaveLoad();
-    testWriteRead();
-  }
-
-  void SpatialPoolerTest::testUpdateInhibitionRadius()
+  TEST(SpatialPoolerTest, testUpdateInhibitionRadius)
   {
     SpatialPooler sp;
     vector<UInt> colDim, inputDim;
@@ -315,7 +257,7 @@ namespace nupic {
 
     sp.initialize(inputDim, colDim);
     sp.setGlobalInhibition(true);
-    NTA_CHECK(sp.getInhibitionRadius() == 57);
+    ASSERT_TRUE(sp.getInhibitionRadius() == 57);
 
     colDim.clear();
     inputDim.clear();
@@ -335,7 +277,7 @@ namespace nupic {
     UInt trueInhibitionRadius = 6;
     // ((3 * 4) - 1)/2 => round up
     sp.updateInhibitionRadius_();
-    NTA_CHECK(trueInhibitionRadius == sp.getInhibitionRadius());
+    ASSERT_TRUE(trueInhibitionRadius == sp.getInhibitionRadius());
 
     colDim.clear();
     inputDim.clear();
@@ -357,7 +299,7 @@ namespace nupic {
     }
     trueInhibitionRadius = 1;
     sp.updateInhibitionRadius_();
-    NTA_CHECK(trueInhibitionRadius == sp.getInhibitionRadius());
+    ASSERT_TRUE(trueInhibitionRadius == sp.getInhibitionRadius());
 
     colDim.clear();
     inputDim.clear();
@@ -377,10 +319,10 @@ namespace nupic {
     trueInhibitionRadius = 2;
     // ((2.4 * 2) - 1)/2 => round up
     sp.updateInhibitionRadius_();
-    NTA_CHECK(trueInhibitionRadius == sp.getInhibitionRadius());
+    ASSERT_TRUE(trueInhibitionRadius == sp.getInhibitionRadius());
   }
 
-  void SpatialPoolerTest::testUpdateMinDutyCycles()
+  TEST(SpatialPoolerTest, testUpdateMinDutyCycles)
   {
     SpatialPooler sp;
     UInt numColumns = 10;
@@ -419,13 +361,13 @@ namespace nupic {
     sp.getMinActiveDutyCycles(resultMinActiveLocal);
 
 
-    NTA_CHECK(check_vector_eq(resultMinActive, resultMinActiveGlobal,
+    ASSERT_TRUE(check_vector_eq(resultMinActive, resultMinActiveGlobal,
                               numColumns));
-    NTA_CHECK(!check_vector_eq(resultMinActive, resultMinActiveLocal,
+    ASSERT_TRUE(!check_vector_eq(resultMinActive, resultMinActiveLocal,
                                numColumns));
-    NTA_CHECK(check_vector_eq(resultMinOverlap, resultMinOverlapGlobal,
+    ASSERT_TRUE(check_vector_eq(resultMinOverlap, resultMinOverlapGlobal,
                               numColumns));
-    NTA_CHECK(!check_vector_eq(resultMinActive, resultMinActiveLocal,
+    ASSERT_TRUE(!check_vector_eq(resultMinActive, resultMinActiveLocal,
                                numColumns));
 
     sp.setGlobalInhibition(false);
@@ -433,18 +375,18 @@ namespace nupic {
     sp.getMinOverlapDutyCycles(resultMinOverlap);
     sp.getMinActiveDutyCycles(resultMinActive);
 
-    NTA_CHECK(!check_vector_eq(resultMinActive, resultMinActiveGlobal,
+    ASSERT_TRUE(!check_vector_eq(resultMinActive, resultMinActiveGlobal,
                                numColumns));
-    NTA_CHECK(check_vector_eq(resultMinActive, resultMinActiveLocal,
+    ASSERT_TRUE(check_vector_eq(resultMinActive, resultMinActiveLocal,
                               numColumns));
-    NTA_CHECK(!check_vector_eq(resultMinOverlap, resultMinOverlapGlobal,
+    ASSERT_TRUE(!check_vector_eq(resultMinOverlap, resultMinOverlapGlobal,
                                numColumns));
-    NTA_CHECK(check_vector_eq(resultMinActive, resultMinActiveLocal,
+    ASSERT_TRUE(check_vector_eq(resultMinActive, resultMinActiveLocal,
                               numColumns));
 
   }
 
-  void SpatialPoolerTest::testUpdateMinDutyCyclesGlobal() {
+  TEST(SpatialPoolerTest, testUpdateMinDutyCyclesGlobal) {
     SpatialPooler sp;
     UInt numColumns = 5;
     UInt numInputs = 5;
@@ -474,8 +416,8 @@ namespace nupic {
     sp.getMinOverlapDutyCycles(resultOverlap1);
     sp.getMinActiveDutyCycles(resultActive1);
     for (UInt i = 0; i < numColumns; i++) {
-      NTA_CHECK(resultOverlap1[i] == trueMinOverlap1);
-      NTA_CHECK(resultActive1[i] == trueMinActive1);
+      ASSERT_TRUE(resultOverlap1[i] == trueMinOverlap1);
+      ASSERT_TRUE(resultActive1[i] == trueMinActive1);
     }
 
 
@@ -500,8 +442,8 @@ namespace nupic {
     sp.getMinOverlapDutyCycles(resultOverlap2);
     sp.getMinActiveDutyCycles(resultActive2);
     for (UInt i = 0; i < numColumns; i++) {
-      NTA_CHECK(almost_eq(resultOverlap2[i],trueMinOverlap2));
-      NTA_CHECK(almost_eq(resultActive2[i],trueMinActive2));
+      ASSERT_TRUE(almost_eq(resultOverlap2[i],trueMinOverlap2));
+      ASSERT_TRUE(almost_eq(resultActive2[i],trueMinActive2));
     }
 
 
@@ -526,42 +468,139 @@ namespace nupic {
     sp.getMinOverlapDutyCycles(resultOverlap3);
     sp.getMinActiveDutyCycles(resultActive3);
     for (UInt i = 0; i < numColumns; i++) {
-      NTA_CHECK(almost_eq(resultOverlap3[i],trueMinOverlap3));
-      NTA_CHECK(almost_eq(resultActive3[i],trueMinActive3));
+      ASSERT_TRUE(almost_eq(resultOverlap3[i],trueMinOverlap3));
+      ASSERT_TRUE(almost_eq(resultActive3[i],trueMinActive3));
     }
   }
 
-  void SpatialPoolerTest::testUpdateMinDutyCyclesLocal()
+  TEST(SpatialPoolerTest, testUpdateMinDutyCyclesLocal)
   {
-    SpatialPooler sp;
-    UInt numInputs = 5;
-    UInt numColumns = 8;
-    setup(sp, numInputs, numColumns);
+    // wrapAround=false
+    {
+      UInt numColumns = 8;
+      SpatialPooler sp(
+        /*inputDimensions*/{5},
+        /*columnDimensions*/ {numColumns},
+        /*potentialRadius*/ 16,
+        /*potentialPct*/ 0.5,
+        /*globalInhibition*/ false,
+        /*localAreaDensity*/ -1.0,
+        /*numActiveColumnsPerInhArea*/ 3,
+        /*stimulusThreshold*/ 1,
+        /*synPermInactiveDec*/ 0.008,
+        /*synPermActiveInc*/ 0.05,
+        /*synPermConnected*/ 0.1,
+        /*minPctOverlapDutyCycles*/ 0.001,
+        /*minPctActiveDutyCycles*/ 0.001,
+        /*dutyCyclePeriod*/ 1000,
+        /*maxBoost*/ 10.0,
+        /*seed*/ 1,
+        /*spVerbosity*/ 0,
+        /*wrapAround*/ false);
 
-    sp.setInhibitionRadius(1);
-    Real activeDutyArr[] = {0.9, 0.3, 0.5, 0.7, 0.1, 0.01, 0.08, 0.12};
-    Real overlapDutyArr[] = {0.7, 0.1, 0.5, 0.01, 0.78, 0.55, 0.1, 0.001};
-    sp.setOverlapDutyCycles(overlapDutyArr);
-    sp.setActiveDutyCycles(activeDutyArr);
-    sp.setMinPctActiveDutyCycles(0.1);
-    sp.setMinPctOverlapDutyCycles(0.2);
+      sp.setInhibitionRadius(1);
 
-    sp.updateMinDutyCyclesLocal_();
+      Real activeDutyArr[] = {0.9, 0.3, 0.5, 0.7, 0.1, 0.01, 0.08, 0.12};
+      sp.setActiveDutyCycles(activeDutyArr);
 
-    Real trueActiveArr[] = {0.09, 0.09, 0.07, 0.07, 0.07, 0.01, 0.012, 0.012};
-    Real trueOverlapArr[] = {0.14, 0.14, 0.1, 0.156, 0.156, 0.156, 0.11, 0.02};
+      Real overlapDutyArr[] = {0.7, 0.1, 0.5, 0.01, 0.78, 0.55, 0.1, 0.001};
+      sp.setOverlapDutyCycles(overlapDutyArr);
 
-    Real resultMinOverlapArr[8];
-    Real resultMinActiveArr[8];
-    sp.getMinActiveDutyCycles(resultMinActiveArr);
-    sp.getMinOverlapDutyCycles(resultMinOverlapArr);
+      sp.setMinPctActiveDutyCycles(0.1);
+      sp.setMinPctOverlapDutyCycles(0.2);
 
-    NTA_CHECK(check_vector_eq(resultMinOverlapArr, trueOverlapArr,
-                              numColumns));
-    NTA_CHECK(check_vector_eq(resultMinActiveArr, trueActiveArr, numColumns));
+      sp.updateMinDutyCyclesLocal_();
+
+      Real trueActiveArr[] = {0.1*0.9,
+                              0.1*0.9,
+                              0.1*0.7,
+                              0.1*0.7,
+                              0.1*0.7,
+                              0.1*0.1,
+                              0.1*0.12,
+                              0.1*0.12};
+      Real resultMinActiveArr[8];
+      sp.getMinActiveDutyCycles(resultMinActiveArr);
+      ASSERT_TRUE(check_vector_eq(resultMinActiveArr, trueActiveArr, numColumns));
+
+      Real trueOverlapArr[] = {0.2*0.7,
+                               0.2*0.7,
+                               0.2*0.5,
+                               0.2*0.78,
+                               0.2*0.78,
+                               0.2*0.78,
+                               0.2*0.55,
+                               0.2*0.1};
+      Real resultMinOverlapArr[8];
+      sp.getMinOverlapDutyCycles(resultMinOverlapArr);
+      ASSERT_TRUE(check_vector_eq(resultMinOverlapArr, trueOverlapArr,
+                                  numColumns));
+    }
+
+    // wrapAround=true
+    {
+      UInt numColumns = 8;
+      SpatialPooler sp(
+        /*inputDimensions*/{5},
+        /*columnDimensions*/ {numColumns},
+        /*potentialRadius*/ 16,
+        /*potentialPct*/ 0.5,
+        /*globalInhibition*/ false,
+        /*localAreaDensity*/ -1.0,
+        /*numActiveColumnsPerInhArea*/ 3,
+        /*stimulusThreshold*/ 1,
+        /*synPermInactiveDec*/ 0.008,
+        /*synPermActiveInc*/ 0.05,
+        /*synPermConnected*/ 0.1,
+        /*minPctOverlapDutyCycles*/ 0.001,
+        /*minPctActiveDutyCycles*/ 0.001,
+        /*dutyCyclePeriod*/ 1000,
+        /*maxBoost*/ 10.0,
+        /*seed*/ 1,
+        /*spVerbosity*/ 0,
+        /*wrapAround*/ true);
+
+      sp.setInhibitionRadius(1);
+
+      Real activeDutyArr[] = {0.9, 0.3, 0.5, 0.7, 0.1, 0.01, 0.08, 0.12};
+      sp.setActiveDutyCycles(activeDutyArr);
+
+      Real overlapDutyArr[] = {0.7, 0.1, 0.5, 0.01, 0.78, 0.55, 0.1, 0.001};
+      sp.setOverlapDutyCycles(overlapDutyArr);
+
+      sp.setMinPctActiveDutyCycles(0.1);
+      sp.setMinPctOverlapDutyCycles(0.2);
+
+      sp.updateMinDutyCyclesLocal_();
+
+      Real trueActiveArr[] = {0.1*0.9,
+                              0.1*0.9,
+                              0.1*0.7,
+                              0.1*0.7,
+                              0.1*0.7,
+                              0.1*0.1,
+                              0.1*0.12,
+                              0.1*0.9};
+      Real resultMinActiveArr[8];
+      sp.getMinActiveDutyCycles(resultMinActiveArr);
+      ASSERT_TRUE(check_vector_eq(resultMinActiveArr, trueActiveArr, numColumns));
+
+      Real trueOverlapArr[] = {0.2*0.7,
+                               0.2*0.7,
+                               0.2*0.5,
+                               0.2*0.78,
+                               0.2*0.78,
+                               0.2*0.78,
+                               0.2*0.55,
+                               0.2*0.7};
+      Real resultMinOverlapArr[8];
+      sp.getMinOverlapDutyCycles(resultMinOverlapArr);
+      ASSERT_TRUE(check_vector_eq(resultMinOverlapArr, trueOverlapArr,
+                                  numColumns));
+    }
   }
 
-  void SpatialPoolerTest::testUpdateDutyCycles()
+  TEST(SpatialPoolerTest, testUpdateDutyCycles)
   {
     SpatialPooler sp;
     UInt numInputs = 5;
@@ -582,7 +621,7 @@ namespace nupic {
     sp.getOverlapDutyCycles(resultOverlapArr1);
 
     Real trueOverlapArr1[] = {1, 1, 1, 0.5, 0.5};
-    NTA_CHECK(check_vector_eq(resultOverlapArr1, trueOverlapArr1, numColumns));
+    ASSERT_TRUE(check_vector_eq(resultOverlapArr1, trueOverlapArr1, numColumns));
 
     sp.setOverlapDutyCycles(initOverlapArr1);
     sp.setIterationNum(2000);
@@ -593,10 +632,10 @@ namespace nupic {
     sp.getOverlapDutyCycles(resultOverlapArr2);
     Real trueOverlapArr2[] = {1, 1, 1, 0.999, 0.999};
 
-    NTA_CHECK(check_vector_eq(resultOverlapArr2, trueOverlapArr2, numColumns));
+    ASSERT_TRUE(check_vector_eq(resultOverlapArr2, trueOverlapArr2, numColumns));
   }
 
-  void SpatialPoolerTest::testAvgColumnsPerInput()
+  TEST(SpatialPoolerTest, testAvgColumnsPerInput)
   {
     SpatialPooler sp;
     vector<UInt> inputDim, colDim;
@@ -611,7 +650,7 @@ namespace nupic {
     colDim.assign(colDim1, colDim1+4);
     sp.initialize(inputDim, colDim);
     Real result = sp.avgColumnsPerInput_();
-    NTA_CHECK(result == trueAvgColumnPerInput1);
+    ASSERT_FLOAT_EQ(result, trueAvgColumnPerInput1);
 
     UInt colDim2[4] =   {2, 2, 2, 2};
     UInt inputDim2[4] = {7, 5, 1, 3};
@@ -621,7 +660,7 @@ namespace nupic {
     colDim.assign(colDim2, colDim2+4);
     sp.initialize(inputDim, colDim);
     result = sp.avgColumnsPerInput_();
-    NTA_CHECK(result == trueAvgColumnPerInput2);
+    ASSERT_FLOAT_EQ(result, trueAvgColumnPerInput2);
 
     UInt colDim3[2] =   {3, 3};
     UInt inputDim3[2] = {3, 3};
@@ -631,7 +670,7 @@ namespace nupic {
     colDim.assign(colDim3, colDim3+2);
     sp.initialize(inputDim, colDim);
     result = sp.avgColumnsPerInput_();
-    NTA_CHECK(result == trueAvgColumnPerInput3);
+    ASSERT_FLOAT_EQ(result, trueAvgColumnPerInput3);
 
 
     UInt colDim4[1] =   {25};
@@ -642,7 +681,7 @@ namespace nupic {
     colDim.assign(colDim4, colDim4+1);
     sp.initialize(inputDim, colDim);
     result = sp.avgColumnsPerInput_();
-    NTA_CHECK(result == trueAvgColumnPerInput4);
+    ASSERT_FLOAT_EQ(result, trueAvgColumnPerInput4);
 
     UInt colDim5[7] =   {3, 5, 6};
     UInt inputDim5[7] = {3, 5, 6};
@@ -652,7 +691,7 @@ namespace nupic {
     colDim.assign(colDim5, colDim5+3);
     sp.initialize(inputDim, colDim);
     result = sp.avgColumnsPerInput_();
-    NTA_CHECK(result == trueAvgColumnPerInput5);
+    ASSERT_FLOAT_EQ(result, trueAvgColumnPerInput5);
 
     UInt colDim6[4] =   {2, 4, 6, 8};
     UInt inputDim6[4] = {2, 2, 2, 2};
@@ -663,10 +702,10 @@ namespace nupic {
     colDim.assign(colDim6, colDim6+4);
     sp.initialize(inputDim, colDim);
     result = sp.avgColumnsPerInput_();
-    NTA_CHECK(result == trueAvgColumnPerInput6);
+    ASSERT_FLOAT_EQ(result, trueAvgColumnPerInput6);
   }
 
-  void SpatialPoolerTest::testAvgConnectedSpanForColumn1D()
+  TEST(SpatialPoolerTest, testAvgConnectedSpanForColumn1D)
   {
 
     SpatialPooler sp;
@@ -691,11 +730,11 @@ namespace nupic {
     for (UInt i = 0; i < numColumns; i++) {
       sp.setPermanence(i, permArr[i]);
       UInt result = sp.avgConnectedSpanForColumn1D_(i);
-      NTA_CHECK(result == trueAvgConnectedSpan[i]);
+      ASSERT_TRUE(result == trueAvgConnectedSpan[i]);
     }
   }
 
-  void SpatialPoolerTest::testAvgConnectedSpanForColumn2D()
+  TEST(SpatialPoolerTest, testAvgConnectedSpanForColumn2D)
   {
     SpatialPooler sp;
 
@@ -765,7 +804,7 @@ namespace nupic {
     for (UInt i = 0; i < numColumns; i++) {
       sp.setPermanence(i, permArr1[i]);
       UInt result = sp.avgConnectedSpanForColumn2D_(i);
-      NTA_CHECK(result == (trueAvgConnectedSpan1[i]));
+      ASSERT_TRUE(result == (trueAvgConnectedSpan1[i]));
     }
 
     //1D tests repeated
@@ -798,11 +837,11 @@ namespace nupic {
     for (UInt i = 0; i < numColumns; i++) {
       sp.setPermanence(i, permArr2[i]);
       UInt result = sp.avgConnectedSpanForColumn2D_(i);
-      NTA_CHECK(result == (trueAvgConnectedSpan2[i] + 1)/2);
+      ASSERT_TRUE(result == (trueAvgConnectedSpan2[i] + 1)/2);
     }
   }
 
-  void SpatialPoolerTest::testAvgConnectedSpanForColumnND()
+  TEST(SpatialPoolerTest, testAvgConnectedSpanForColumnND)
   {
     SpatialPooler sp;
     vector<UInt> inputDim, colDim;
@@ -867,11 +906,11 @@ namespace nupic {
 
     for (UInt i = 0; i < numColumns; i++) {
       Real result = sp.avgConnectedSpanForColumnND_(i);
-      NTA_CHECK(result == trueAvgConnectedSpan[i]);
+      ASSERT_TRUE(result == trueAvgConnectedSpan[i]);
     }
   }
 
-  void SpatialPoolerTest::testAdaptSynapses()
+  TEST(SpatialPoolerTest, testAdaptSynapses)
   {
     SpatialPooler sp;
     UInt numColumns = 4;
@@ -918,7 +957,7 @@ namespace nupic {
     for (UInt column = 0; column < numColumns; column++) {
       auto permArr = new Real[numInputs];
       sp.getPermanence(column, permArr);
-      NTA_CHECK(check_vector_eq(truePermanences1[column],
+      ASSERT_TRUE(check_vector_eq(truePermanences1[column],
                                 permArr,
                                 numInputs));
       delete[] permArr;
@@ -962,13 +1001,13 @@ namespace nupic {
     for (UInt column = 0; column < numColumns; column++) {
       auto permArr = new Real[numInputs];
       sp.getPermanence(column, permArr);
-      NTA_CHECK(check_vector_eq(truePermanences2[column], permArr, numInputs));
+      ASSERT_TRUE(check_vector_eq(truePermanences2[column], permArr, numInputs));
       delete[] permArr;
     }
 
   }
 
-  void SpatialPoolerTest::testBumpUpWeakColumns()
+  TEST(SpatialPoolerTest, testBumpUpWeakColumns)
   {
     SpatialPooler sp;
     UInt numInputs = 8;
@@ -1018,12 +1057,12 @@ namespace nupic {
     for (UInt i = 0; i < numColumns; i++) {
       Real perm[8];
       sp.getPermanence(i, perm);
-      NTA_CHECK(check_vector_eq(truePermArr[i], perm, numInputs));
+      ASSERT_TRUE(check_vector_eq(truePermArr[i], perm, numInputs));
     }
 
   }
 
-  void SpatialPoolerTest::testUpdateDutyCyclesHelper()
+  TEST(SpatialPoolerTest, testUpdateDutyCyclesHelper)
   {
     SpatialPooler sp;
     vector<Real> dutyCycles;
@@ -1039,7 +1078,7 @@ namespace nupic {
     dutyCycles.assign(dutyCyclesArr1, dutyCyclesArr1+5);
     newValues.assign(newValues1, newValues1+5);
     sp.updateDutyCyclesHelper_(dutyCycles, newValues, period);
-    NTA_CHECK(check_vector_eq(trueDutyCycles1, dutyCycles));
+    ASSERT_TRUE(check_vector_eq(trueDutyCycles1, dutyCycles));
 
     dutyCycles.clear();
     newValues.clear();
@@ -1050,7 +1089,7 @@ namespace nupic {
     dutyCycles.assign(dutyCyclesArr2, dutyCyclesArr2+5);
     newValues.assign(newValues2, newValues2+5);
     sp.updateDutyCyclesHelper_(dutyCycles, newValues, period);
-    NTA_CHECK(check_vector_eq(trueDutyCycles2, dutyCycles));
+    ASSERT_TRUE(check_vector_eq(trueDutyCycles2, dutyCycles));
 
     dutyCycles.clear();
     newValues.clear();
@@ -1061,7 +1100,7 @@ namespace nupic {
     dutyCycles.assign(dutyCyclesArr3, dutyCyclesArr3+5);
     newValues.assign(newValues3, newValues3+5);
     sp.updateDutyCyclesHelper_(dutyCycles, newValues, period);
-    NTA_CHECK(check_vector_eq(trueDutyCycles3, dutyCycles));
+    ASSERT_TRUE(check_vector_eq(trueDutyCycles3, dutyCycles));
 
     dutyCycles.clear();
     newValues.clear();
@@ -1072,11 +1111,11 @@ namespace nupic {
     dutyCycles.assign(dutyCyclesArr4, dutyCyclesArr4+5);
     newValues.assign(newValues4, newValues4+5);
     sp.updateDutyCyclesHelper_(dutyCycles, newValues, period);
-    NTA_CHECK(check_vector_eq(trueDutyCycles4, dutyCycles));
+    ASSERT_TRUE(check_vector_eq(trueDutyCycles4, dutyCycles));
 
   }
 
-  void SpatialPoolerTest::testUpdateBoostFactors()
+  TEST(SpatialPoolerTest, testUpdateBoostFactors)
   {
     SpatialPooler sp;
     setup(sp, 6, 6);
@@ -1096,7 +1135,7 @@ namespace nupic {
     sp.setMinActiveDutyCycles(initMinActiveDutyCycles1);
     sp.updateBoostFactors_();
     sp.getBoostFactors(resultBoostFactors1);
-    NTA_CHECK(check_vector_eq(trueBoostFactors1, resultBoostFactors1, 6));
+    ASSERT_TRUE(check_vector_eq(trueBoostFactors1, resultBoostFactors1, 6));
 
     Real initMinActiveDutyCycles2[] =
       {0.1, 0.3, 0.02, 0.04, 0.7, 0.12};
@@ -1113,7 +1152,7 @@ namespace nupic {
     sp.setMinActiveDutyCycles(initMinActiveDutyCycles2);
     sp.updateBoostFactors_();
     sp.getBoostFactors(resultBoostFactors2);
-    NTA_CHECK(check_vector_eq(trueBoostFactors2, resultBoostFactors2, 6));
+    ASSERT_TRUE(check_vector_eq(trueBoostFactors2, resultBoostFactors2, 6));
 
      Real initMinActiveDutyCycles3[] =
       {0.1, 0.3, 0.02, 0.04, 0.7, 0.12};
@@ -1130,7 +1169,7 @@ namespace nupic {
     sp.setMinActiveDutyCycles(initMinActiveDutyCycles3);
     sp.updateBoostFactors_();
     sp.getBoostFactors(resultBoostFactors3);
-    NTA_CHECK(check_vector_eq(trueBoostFactors3, resultBoostFactors3, 6));
+    ASSERT_TRUE(check_vector_eq(trueBoostFactors3, resultBoostFactors3, 6));
 
      Real initMinActiveDutyCycles4[] =
       {0.1, 0.3, 0.02, 0.04, 0.7, 0.12};
@@ -1147,24 +1186,24 @@ namespace nupic {
     sp.setMinActiveDutyCycles(initMinActiveDutyCycles4);
     sp.updateBoostFactors_();
     sp.getBoostFactors(resultBoostFactors4);
-    NTA_CHECK(check_vector_eq(trueBoostFactors4, resultBoostFactors4, 6));
+    ASSERT_TRUE(check_vector_eq(trueBoostFactors4, resultBoostFactors4, 6));
   }
 
-  void SpatialPoolerTest::testUpdateBookeepingVars()
+  TEST(SpatialPoolerTest, testUpdateBookeepingVars)
   {
     SpatialPooler sp;
     sp.setIterationNum(5);
     sp.setIterationLearnNum(3);
     sp.updateBookeepingVars_(true);
-    NTA_CHECK(6 == sp.getIterationNum());
-    NTA_CHECK(4 == sp.getIterationLearnNum());
+    ASSERT_TRUE(6 == sp.getIterationNum());
+    ASSERT_TRUE(4 == sp.getIterationLearnNum());
 
     sp.updateBookeepingVars_(false);
-    NTA_CHECK(7 == sp.getIterationNum());
-    NTA_CHECK(4 == sp.getIterationLearnNum());
+    ASSERT_TRUE(7 == sp.getIterationNum());
+    ASSERT_TRUE(4 == sp.getIterationLearnNum());
   }
 
-  void SpatialPoolerTest::testCalculateOverlap()
+  TEST(SpatialPoolerTest, testCalculateOverlap)
   {
     SpatialPooler sp;
     UInt numInputs = 10;
@@ -1204,11 +1243,11 @@ namespace nupic {
     {
       vector<UInt> overlaps;
       sp.calculateOverlap_(inputs[i], overlaps);
-      NTA_CHECK(check_vector_eq(trueOverlaps[i],overlaps));
+      ASSERT_TRUE(check_vector_eq(trueOverlaps[i],overlaps));
     }
   }
 
-  void SpatialPoolerTest::testCalculateOverlapPct()
+  TEST(SpatialPoolerTest, testCalculateOverlapPct)
   {
     SpatialPooler sp;
     UInt numInputs = 10;
@@ -1249,21 +1288,25 @@ namespace nupic {
       vector<UInt> overlaps;
       overlaps.assign(&overlapsArr[i][0],&overlapsArr[i][numColumns]);
       sp.calculateOverlapPct_(overlaps,overlapsPct);
-      NTA_CHECK(check_vector_eq(trueOverlapsPct[i],overlapsPct));
+      ASSERT_TRUE(check_vector_eq(trueOverlapsPct[i],overlapsPct));
     }
 
 
   }
-  void SpatialPoolerTest::testIsWinner()
+
+  TEST(SpatialPoolerTest, testIsWinner)
   {
-    SpatialPooler sp;
+    UInt numInputs = 10;
+    UInt numColumns = 5;
+    SpatialPooler sp({numInputs}, {numColumns});
+
     vector<pair<UInt, Real> > winners;
 
     UInt numWinners = 3;
     Real score = -5;
-    NTA_CHECK(sp.isWinner_(score,winners,numWinners));
+    ASSERT_FALSE(sp.isWinner_(score,winners,numWinners));
     score = 0;
-    NTA_CHECK(sp.isWinner_(score,winners,numWinners));
+    ASSERT_TRUE(sp.isWinner_(score,winners,numWinners));
 
     pair<UInt, Real> sc1; sc1.first = 1;  sc1.second = 32;
     pair<UInt, Real> sc2; sc2.first = 2;  sc2.second = 27;
@@ -1274,22 +1317,22 @@ namespace nupic {
 
     numWinners = 3;
     score = -5;
-    NTA_CHECK(!sp.isWinner_(score,winners,numWinners));
+    ASSERT_TRUE(!sp.isWinner_(score,winners,numWinners));
     score = 18;
-    NTA_CHECK(!sp.isWinner_(score,winners,numWinners));
+    ASSERT_TRUE(!sp.isWinner_(score,winners,numWinners));
     score = 18;
     numWinners = 4;
-    NTA_CHECK(sp.isWinner_(score,winners,numWinners));
+    ASSERT_TRUE(sp.isWinner_(score,winners,numWinners));
     numWinners = 3;
     score = 20;
-    NTA_CHECK(sp.isWinner_(score,winners,numWinners));
+    ASSERT_TRUE(sp.isWinner_(score,winners,numWinners));
     score = 30;
-    NTA_CHECK(sp.isWinner_(score,winners,numWinners));
+    ASSERT_TRUE(sp.isWinner_(score,winners,numWinners));
     score = 40;
-    NTA_CHECK(sp.isWinner_(score,winners,numWinners));
+    ASSERT_TRUE(sp.isWinner_(score,winners,numWinners));
     score = 40;
     numWinners = 6;
-    NTA_CHECK(sp.isWinner_(score,winners,numWinners));
+    ASSERT_TRUE(sp.isWinner_(score,winners,numWinners));
 
     pair<UInt, Real> sc4; sc4.first = 34; sc4.second = 17.1;
     pair<UInt, Real> sc5; sc5.first = 51; sc5.second = 1.2;
@@ -1300,19 +1343,19 @@ namespace nupic {
 
     score = 40;
     numWinners = 6;
-    NTA_CHECK(sp.isWinner_(score,winners,numWinners));
+    ASSERT_TRUE(sp.isWinner_(score,winners,numWinners));
     score = 12;
     numWinners = 6;
-    NTA_CHECK(sp.isWinner_(score,winners,numWinners));
+    ASSERT_TRUE(sp.isWinner_(score,winners,numWinners));
     score = 0.1;
     numWinners = 6;
-    NTA_CHECK(!sp.isWinner_(score,winners,numWinners));
+    ASSERT_TRUE(!sp.isWinner_(score,winners,numWinners));
     score = 0.1;
     numWinners = 7;
-    NTA_CHECK(sp.isWinner_(score,winners,numWinners));
+    ASSERT_TRUE(sp.isWinner_(score,winners,numWinners));
   }
 
-  void SpatialPoolerTest::testAddToWinners()
+  TEST(SpatialPoolerTest, testAddToWinners)
   {
     SpatialPooler sp;
     vector<pair<UInt, Real> > winners;
@@ -1327,55 +1370,55 @@ namespace nupic {
     index = 2; score = 27;
     sp.addToWinners_(index,score,winners);
 
-    NTA_CHECK(winners[0].first == 1);
-    NTA_CHECK(almost_eq(winners[0].second,32));
-    NTA_CHECK(winners[1].first == 2);
-    NTA_CHECK(almost_eq(winners[1].second,27));
-    NTA_CHECK(winners[2].first == 17);
-    NTA_CHECK(almost_eq(winners[2].second,19.5));
+    ASSERT_TRUE(winners[0].first == 1);
+    ASSERT_TRUE(almost_eq(winners[0].second,32));
+    ASSERT_TRUE(winners[1].first == 2);
+    ASSERT_TRUE(almost_eq(winners[1].second,27));
+    ASSERT_TRUE(winners[2].first == 17);
+    ASSERT_TRUE(almost_eq(winners[2].second,19.5));
 
     index = 15; score = 20.5;
     sp.addToWinners_(index,score,winners);
-    NTA_CHECK(winners[0].first == 1);
-    NTA_CHECK(almost_eq(winners[0].second,32));
-    NTA_CHECK(winners[1].first == 2);
-    NTA_CHECK(almost_eq(winners[1].second,27));
-    NTA_CHECK(winners[2].first == 15);
-    NTA_CHECK(almost_eq(winners[2].second,20.5));
-    NTA_CHECK(winners[3].first == 17);
-    NTA_CHECK(almost_eq(winners[3].second,19.5));
+    ASSERT_TRUE(winners[0].first == 1);
+    ASSERT_TRUE(almost_eq(winners[0].second,32));
+    ASSERT_TRUE(winners[1].first == 2);
+    ASSERT_TRUE(almost_eq(winners[1].second,27));
+    ASSERT_TRUE(winners[2].first == 15);
+    ASSERT_TRUE(almost_eq(winners[2].second,20.5));
+    ASSERT_TRUE(winners[3].first == 17);
+    ASSERT_TRUE(almost_eq(winners[3].second,19.5));
 
     index = 7; score = 100;
     sp.addToWinners_(index,score,winners);
-    NTA_CHECK(winners[0].first == 7);
-    NTA_CHECK(almost_eq(winners[0].second,100));
-    NTA_CHECK(winners[1].first == 1);
-    NTA_CHECK(almost_eq(winners[1].second,32));
-    NTA_CHECK(winners[2].first == 2);
-    NTA_CHECK(almost_eq(winners[2].second,27));
-    NTA_CHECK(winners[3].first == 15);
-    NTA_CHECK(almost_eq(winners[3].second,20.5));
-    NTA_CHECK(winners[4].first == 17);
-    NTA_CHECK(almost_eq(winners[4].second,19.5));
+    ASSERT_TRUE(winners[0].first == 7);
+    ASSERT_TRUE(almost_eq(winners[0].second,100));
+    ASSERT_TRUE(winners[1].first == 1);
+    ASSERT_TRUE(almost_eq(winners[1].second,32));
+    ASSERT_TRUE(winners[2].first == 2);
+    ASSERT_TRUE(almost_eq(winners[2].second,27));
+    ASSERT_TRUE(winners[3].first == 15);
+    ASSERT_TRUE(almost_eq(winners[3].second,20.5));
+    ASSERT_TRUE(winners[4].first == 17);
+    ASSERT_TRUE(almost_eq(winners[4].second,19.5));
 
     index = 22; score = 1;
     sp.addToWinners_(index,score,winners);
-    NTA_CHECK(winners[0].first == 7);
-    NTA_CHECK(almost_eq(winners[0].second,100));
-    NTA_CHECK(winners[1].first == 1);
-    NTA_CHECK(almost_eq(winners[1].second,32));
-    NTA_CHECK(winners[2].first == 2);
-    NTA_CHECK(almost_eq(winners[2].second,27));
-    NTA_CHECK(winners[3].first == 15);
-    NTA_CHECK(almost_eq(winners[3].second,20.5));
-    NTA_CHECK(winners[4].first == 17);
-    NTA_CHECK(almost_eq(winners[4].second,19.5));
-    NTA_CHECK(winners[5].first == 22);
-    NTA_CHECK(almost_eq(winners[5].second,1));
+    ASSERT_TRUE(winners[0].first == 7);
+    ASSERT_TRUE(almost_eq(winners[0].second,100));
+    ASSERT_TRUE(winners[1].first == 1);
+    ASSERT_TRUE(almost_eq(winners[1].second,32));
+    ASSERT_TRUE(winners[2].first == 2);
+    ASSERT_TRUE(almost_eq(winners[2].second,27));
+    ASSERT_TRUE(winners[3].first == 15);
+    ASSERT_TRUE(almost_eq(winners[3].second,20.5));
+    ASSERT_TRUE(winners[4].first == 17);
+    ASSERT_TRUE(almost_eq(winners[4].second,19.5));
+    ASSERT_TRUE(winners[5].first == 22);
+    ASSERT_TRUE(almost_eq(winners[5].second,1));
 
   }
 
-  void SpatialPoolerTest::testInhibitColumns()
+  TEST(SpatialPoolerTest, testInhibitColumns)
   {
     SpatialPooler sp;
     setup(sp, 10,10);
@@ -1405,8 +1448,8 @@ namespace nupic {
     overlaps.assign(&overlapsArray[0],&overlapsArray[numColumns]);
     sp.inhibitColumns_(overlaps, activeColumns);
 
-    NTA_CHECK(check_vector_eq(activeColumns, activeColumnsGlobal));
-    NTA_CHECK(!check_vector_eq(activeColumns, activeColumnsLocal));
+    ASSERT_TRUE(check_vector_eq(activeColumns, activeColumnsGlobal));
+    ASSERT_TRUE(!check_vector_eq(activeColumns, activeColumnsLocal));
 
     sp.setGlobalInhibition(false);
     sp.setInhibitionRadius(numColumns + 1);
@@ -1414,8 +1457,8 @@ namespace nupic {
     overlaps.assign(&overlapsArray[0],&overlapsArray[numColumns]);
     sp.inhibitColumns_(overlaps, activeColumns);
 
-    NTA_CHECK(check_vector_eq(activeColumns, activeColumnsGlobal));
-    NTA_CHECK(!check_vector_eq(activeColumns, activeColumnsLocal));
+    ASSERT_TRUE(check_vector_eq(activeColumns, activeColumnsGlobal));
+    ASSERT_TRUE(!check_vector_eq(activeColumns, activeColumnsLocal));
 
     inhibitionRadius = 2;
     density = 2.0 / 5;
@@ -1431,11 +1474,11 @@ namespace nupic {
     overlaps.assign(&overlapsArray[0],&overlapsArray[numColumns]);
     sp.inhibitColumns_(overlaps, activeColumns);
 
-    NTA_CHECK(!check_vector_eq(activeColumns, activeColumnsGlobal));
-    NTA_CHECK(check_vector_eq(activeColumns, activeColumnsLocal));
+    ASSERT_TRUE(!check_vector_eq(activeColumns, activeColumnsGlobal));
+    ASSERT_TRUE(check_vector_eq(activeColumns, activeColumnsLocal));
   }
 
-  void SpatialPoolerTest::testInhibitColumnsGlobal()
+  TEST(SpatialPoolerTest, testInhibitColumnsGlobal)
   {
     SpatialPooler sp;
     UInt numInputs = 10;
@@ -1464,7 +1507,7 @@ namespace nupic {
       active[activeColumn] = 1;
     }
 
-    NTA_CHECK(check_vector_eq(trueActive,active));
+    ASSERT_TRUE(check_vector_eq(trueActive,active));
 
 
     density = 0.5;
@@ -1481,643 +1524,176 @@ namespace nupic {
       active[activeColumn] = 1;
     }
 
-    NTA_CHECK(check_vector_eq(trueActive,active));
+    ASSERT_TRUE(check_vector_eq(trueActive,active));
   }
 
-  void SpatialPoolerTest::testInhibitColumnsLocal()
+  TEST(SpatialPoolerTest, testInhibitColumnsLocal)
   {
-    SpatialPooler sp;
-    setup(sp,10,10);
-    Real density;
-    UInt inhibitionRadius;
+    // wrapAround = false
+    {
+      SpatialPooler sp(
+        /*inputDimensions*/{10},
+        /*columnDimensions*/ {10},
+        /*potentialRadius*/ 16,
+        /*potentialPct*/ 0.5,
+        /*globalInhibition*/ false,
+        /*localAreaDensity*/ -1.0,
+        /*numActiveColumnsPerInhArea*/ 3,
+        /*stimulusThreshold*/ 1,
+        /*synPermInactiveDec*/ 0.008,
+        /*synPermActiveInc*/ 0.05,
+        /*synPermConnected*/ 0.1,
+        /*minPctOverlapDutyCycles*/ 0.001,
+        /*minPctActiveDutyCycles*/ 0.001,
+        /*dutyCyclePeriod*/ 1000,
+        /*maxBoost*/ 10.0,
+        /*seed*/ 1,
+        /*spVerbosity*/ 0,
+        /*wrapAround*/ false);
 
-    vector<Real> overlaps;
-    vector<UInt> active;
+      Real density;
+      UInt inhibitionRadius;
 
-    Real overlapsArray1[10] = { 1, 2, 7, 0, 3, 4, 16, 1, 1.5, 1.7};
-                            //  L  W  W  L  L  W  W   L   L    W
+      vector<Real> overlaps;
+      vector<UInt> active;
 
-    inhibitionRadius = 2;
-    density = 0.5;
-    overlaps.assign(&overlapsArray1[0], &overlapsArray1[10]);
-    UInt trueActive[5] = {1, 2, 5, 6, 9};
-    sp.setInhibitionRadius(inhibitionRadius);
-    sp.inhibitColumnsLocal_(overlaps, density, active);
-    NTA_CHECK(active.size() == 5);
-    NTA_CHECK(check_vector_eq(trueActive, active));
+      Real overlapsArray1[10] = { 1, 2, 7, 0, 3, 4, 16, 1, 1.5, 1.7};
+                              //  L  W  W  L  L  W  W   L   L    W
 
-    Real overlapsArray2[10] = {1, 2, 7, 0, 3, 4, 16, 1, 1.5, 1.7};
-                          //   L  W  W  L  L  W   W  L   L    W
-    overlaps.assign(&overlapsArray2[0], &overlapsArray2[10]);
-    UInt trueActive2[6] = {1, 2, 4, 5, 6, 9};
-    inhibitionRadius = 3;
-    density = 0.5;
-    sp.setInhibitionRadius(inhibitionRadius);
-    sp.inhibitColumnsLocal_(overlaps, density, active);
-    NTA_CHECK(active.size() == 6);
-    NTA_CHECK(check_vector_eq(trueActive2, active));
+      inhibitionRadius = 2;
+      density = 0.5;
+      overlaps.assign(&overlapsArray1[0], &overlapsArray1[10]);
+      UInt trueActive[5] = {1, 2, 5, 6, 9};
+      sp.setInhibitionRadius(inhibitionRadius);
+      sp.inhibitColumnsLocal_(overlaps, density, active);
+      ASSERT_EQ(5, active.size());
+      ASSERT_TRUE(check_vector_eq(trueActive, active));
 
-    // Test arbitration
+      Real overlapsArray2[10] = {1, 2, 7, 0, 3, 4, 16, 1, 1.5, 1.7};
+                            //   L  W  W  L  L  W   W  L   L    W
+      overlaps.assign(&overlapsArray2[0], &overlapsArray2[10]);
+      UInt trueActive2[6] = {1, 2, 4, 5, 6, 9};
+      inhibitionRadius = 3;
+      density = 0.5;
+      sp.setInhibitionRadius(inhibitionRadius);
+      sp.inhibitColumnsLocal_(overlaps, density, active);
+      ASSERT_TRUE(active.size() == 6);
+      ASSERT_TRUE(check_vector_eq(trueActive2, active));
 
-    Real overlapsArray3[10] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
-                            // W  L  W  L  W  L  W  L  L  L
-    overlaps.assign(&overlapsArray3[0], &overlapsArray3[10]);
-    UInt trueActive3[4] = {0, 2, 4, 6};
-    inhibitionRadius = 3;
-    density = 0.25;
-    sp.setInhibitionRadius(inhibitionRadius);
-    sp.inhibitColumnsLocal_(overlaps, density, active);
+      // Test arbitration
 
-    NTA_CHECK(active.size() == 4);
-    NTA_CHECK(check_vector_eq(trueActive3, active));
+      Real overlapsArray3[10] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+                              // W  L  W  L  W  L  W  L  L  L
+      overlaps.assign(&overlapsArray3[0], &overlapsArray3[10]);
+      UInt trueActive3[4] = {0, 2, 4, 6};
+      inhibitionRadius = 3;
+      density = 0.25;
+      sp.setInhibitionRadius(inhibitionRadius);
+      sp.inhibitColumnsLocal_(overlaps, density, active);
 
+      ASSERT_TRUE(active.size() == 4);
+      ASSERT_TRUE(check_vector_eq(trueActive3, active));
+    }
+
+    // wrapAround = true
+    {
+      SpatialPooler sp(
+        /*inputDimensions*/{10},
+        /*columnDimensions*/ {10},
+        /*potentialRadius*/ 16,
+        /*potentialPct*/ 0.5,
+        /*globalInhibition*/ false,
+        /*localAreaDensity*/ -1.0,
+        /*numActiveColumnsPerInhArea*/ 3,
+        /*stimulusThreshold*/ 1,
+        /*synPermInactiveDec*/ 0.008,
+        /*synPermActiveInc*/ 0.05,
+        /*synPermConnected*/ 0.1,
+        /*minPctOverlapDutyCycles*/ 0.001,
+        /*minPctActiveDutyCycles*/ 0.001,
+        /*dutyCyclePeriod*/ 1000,
+        /*maxBoost*/ 10.0,
+        /*seed*/ 1,
+        /*spVerbosity*/ 0,
+        /*wrapAround*/ true);
+
+      Real density;
+      UInt inhibitionRadius;
+
+      vector<Real> overlaps;
+      vector<UInt> active;
+
+      Real overlapsArray1[10] = { 1, 2, 7, 0, 3, 4, 16, 1, 1.5, 1.7};
+                              //  L  W  W  L  L  W  W   L   W    W
+
+      inhibitionRadius = 2;
+      density = 0.5;
+      overlaps.assign(&overlapsArray1[0], &overlapsArray1[10]);
+      UInt trueActive[6] = {1, 2, 5, 6, 8, 9};
+      sp.setInhibitionRadius(inhibitionRadius);
+      sp.inhibitColumnsLocal_(overlaps, density, active);
+      ASSERT_EQ(6, active.size());
+      ASSERT_TRUE(check_vector_eq(trueActive, active));
+
+      Real overlapsArray2[10] = {1, 2, 7, 0, 3, 4, 16, 1, 1.5, 1.7};
+                            //   L  W  W  L  W  W   W  L   L    W
+      overlaps.assign(&overlapsArray2[0], &overlapsArray2[10]);
+      UInt trueActive2[6] = {1, 2, 4, 5, 6, 9};
+      inhibitionRadius = 3;
+      density = 0.5;
+      sp.setInhibitionRadius(inhibitionRadius);
+      sp.inhibitColumnsLocal_(overlaps, density, active);
+      ASSERT_TRUE(active.size() == 6);
+      ASSERT_TRUE(check_vector_eq(trueActive2, active));
+
+      // Test arbitration
+
+      Real overlapsArray3[10] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+                              // W  W  L  L  W  W  L  L  L  W
+      overlaps.assign(&overlapsArray3[0], &overlapsArray3[10]);
+      UInt trueActive3[4] = {0, 1, 4, 5};
+      inhibitionRadius = 3;
+      density = 0.25;
+      sp.setInhibitionRadius(inhibitionRadius);
+      sp.inhibitColumnsLocal_(overlaps, density, active);
+
+      ASSERT_TRUE(active.size() == 4);
+      ASSERT_TRUE(check_vector_eq(trueActive3, active));
+    }
   }
 
-  void SpatialPoolerTest::testGetNeighbors1D()
-  {
-
-    SpatialPooler sp;
-    UInt numInputs = 5;
-    UInt numColumns = 8;
-    setup(sp,numInputs,numColumns);
-
-    UInt column;
-    UInt radius;
-    vector<UInt> dimensions;
-    vector<UInt> neighbors;
-    bool wrapAround;
-    vector<UInt> neighborsMap(numColumns, 0);
-
-    column = 3;
-    radius = 1;
-    wrapAround = true;
-    dimensions.push_back(8);
-    UInt trueNeighborsMap1[8] = {0, 0, 1, 0, 1, 0, 0, 0};
-    sp.getNeighbors1D_(column, dimensions, radius, wrapAround,
-                          neighbors);
-    neighborsMap.assign(numColumns, 0);
-    for (auto & neighbor : neighbors) {
-      neighborsMap[neighbor] = 1;
-    }
-    NTA_CHECK(check_vector_eq(trueNeighborsMap1, neighborsMap));
-
-    column = 3;
-    radius = 2;
-    wrapAround = false;
-    UInt trueNeighborsMap2[8] = {0, 1, 1, 0, 1, 1, 0, 0};
-    sp.getNeighbors1D_(column, dimensions, radius, wrapAround,
-                          neighbors);
-    neighborsMap.assign(numColumns, 0);
-    for (auto & neighbor : neighbors) {
-      neighborsMap[neighbor] = 1;
-    }
-    NTA_CHECK(check_vector_eq(trueNeighborsMap2, neighborsMap));
-
-    column = 0;
-    radius = 2;
-    wrapAround = true;
-    UInt trueNeighborsMap3[8] = {0, 1, 1, 0, 0, 0, 1, 1};
-    sp.getNeighbors1D_(column, dimensions, radius, wrapAround,
-                          neighbors);
-    neighborsMap.assign(numColumns, 0);
-    for (auto & neighbor : neighbors) {
-      neighborsMap[neighbor] = 1;
-    }
-    NTA_CHECK(check_vector_eq(trueNeighborsMap3, neighborsMap));
-  }
-
-  void SpatialPoolerTest::testGetNeighbors2D()
-  {
-    UInt numColumns = 30;
-    vector<UInt> dimensions;
-    dimensions.push_back(6);
-    dimensions.push_back(5);
-    SpatialPooler sp;
-    vector<UInt> neighbors;
-    UInt column;
-    UInt radius;
-    bool wrapAround;
-    vector<UInt> neighborsMap;
-
-    UInt trueNeighborsMap1[30] =
-      {0, 0, 0, 0, 0,
-       0, 0, 0, 0, 0,
-       0, 1, 1, 1, 0,
-       0, 1, 0, 1, 0,
-       0, 1, 1, 1, 0,
-       0, 0, 0, 0, 0};
-
-    column = 3*5+2;
-    radius = 1;
-    wrapAround = false;
-    sp.getNeighbors2D_(column, dimensions, radius, wrapAround, neighbors);
-    neighborsMap.assign(numColumns, 0);
-    for (auto & neighbor : neighbors) {
-      neighborsMap[neighbor] = 1;
-    }
-    NTA_CHECK(check_vector_eq(trueNeighborsMap1, neighborsMap));
-
-    UInt trueNeighborsMap2[30] =
-      {0, 0, 0, 0, 0,
-       1, 1, 1, 1, 1,
-       1, 1, 1, 1, 1,
-       1, 1, 0, 1, 1,
-       1, 1, 1, 1, 1,
-       1, 1, 1, 1, 1};
-
-    column = 3*5+2;
-    radius = 2;
-    wrapAround = false;
-    sp.getNeighbors2D_(column, dimensions, radius, wrapAround, neighbors);
-    neighborsMap.assign(numColumns, 0);
-    for (auto & neighbor : neighbors) {
-      neighborsMap[neighbor] = 1;
-    }
-    NTA_CHECK(check_vector_eq(trueNeighborsMap2, neighborsMap));
-
-    UInt trueNeighborsMap3[30] =
-      {1, 1, 1, 1, 1,
-       1, 1, 1, 1, 1,
-       1, 1, 1, 1, 1,
-       1, 1, 0, 1, 1,
-       1, 1, 1, 1, 1,
-       1, 1, 1, 1, 1};
-
-    column = 3*5+2;
-    radius = 3;
-    wrapAround = false;
-    sp.getNeighbors2D_(column, dimensions, radius, wrapAround, neighbors);
-    neighborsMap.assign(numColumns, 0);
-    for (auto & neighbor : neighbors) {
-      neighborsMap[neighbor] = 1;
-    }
-    NTA_CHECK(check_vector_eq(trueNeighborsMap3, neighborsMap));
-
-    UInt trueNeighborsMap4[30] =
-      {1, 0, 0, 1, 1,
-       0, 0, 0, 0, 0,
-       0, 0, 0, 0, 0,
-       0, 0, 0, 0, 0,
-       1, 0, 0, 1, 1,
-       1, 0, 0, 1, 0};
-
-    column = 29;
-    radius = 1;
-    wrapAround = true;
-    sp.getNeighbors2D_(column, dimensions, radius, wrapAround, neighbors);
-    neighborsMap.assign(numColumns, 0);
-    for (auto & neighbor : neighbors) {
-      neighborsMap[neighbor] = 1;
-    }
-    NTA_CHECK(check_vector_eq(trueNeighborsMap4, neighborsMap));
-  }
-
-  bool SpatialPoolerTest::findVector(UInt needle[], UInt n,
-                                     vector<vector<UInt> > haystack)
-  {
-    for (auto & elem : haystack) {
-      vector<UInt> hay = elem;
-      if (hay.size() != n) {
-        continue;
-      }
-
-      bool match = true;
-      for (UInt j = 0; j < hay.size(); j++) {
-        if (hay[j] != needle[j]) {
-          match = false;
-          break;
-        }
-      }
-
-      if (match) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  void SpatialPoolerTest::testCartesianProduct()
-  {
-    vector<vector<UInt> > vecs;
-    vector<vector<UInt> > prod;
-    UInt needle[3];
-    vector<UInt> v1, v2, v3;
-    SpatialPooler sp;
-
-    sp.cartesianProduct_(vecs, prod);
-    NTA_CHECK(prod.size() == 0);
-
-    v1.push_back(2);
-    v1.push_back(4);
-
-    v2.push_back(1);
-    v2.push_back(3);
-
-    vecs.push_back(v2);
-    vecs.push_back(v1);
-
-    sp.cartesianProduct_(vecs,prod);
-    NTA_CHECK(prod.size() == 4);
-    needle[0] = 2; needle[1] = 1;
-    NTA_CHECK(findVector(needle, 2, prod));
-    needle[0] = 2; needle[1] = 3;
-    NTA_CHECK(findVector(needle, 2, prod));
-    needle[0] = 4; needle[1] = 1;
-    NTA_CHECK(findVector(needle, 2, prod));
-    needle[0] = 4; needle[1] = 3;
-    NTA_CHECK(findVector(needle, 2, prod));
-
-
-    v1.clear();
-    v2.clear();
-    vecs.clear();
-    prod.clear();
-
-    v1.push_back(1);
-    v1.push_back(2);
-    v1.push_back(3);
-
-    v2.push_back(4);
-    v2.push_back(5);
-    v2.push_back(6);
-
-    v3.push_back(7);
-    v3.push_back(8);
-    v3.push_back(9);
-
-    vecs.push_back(v3);
-    vecs.push_back(v2);
-    vecs.push_back(v1);
-
-    sp.cartesianProduct_(vecs, prod);
-    NTA_CHECK(prod.size() == 27);
-    needle[0] = 1; needle[1] = 4; needle[2] = 7;
-    NTA_CHECK(findVector(needle,3,prod));
-    needle[0] = 1; needle[1] = 4; needle[2] = 8;
-    NTA_CHECK(findVector(needle,3,prod));
-    needle[0] = 1; needle[1] = 4; needle[2] = 9;
-    NTA_CHECK(findVector(needle,3,prod));
-
-    needle[0] = 1; needle[1] = 5; needle[2] = 7;
-    NTA_CHECK(findVector(needle,3,prod));
-    needle[0] = 1; needle[1] = 5; needle[2] = 8;
-    NTA_CHECK(findVector(needle,3,prod));
-    needle[0] = 1; needle[1] = 5; needle[2] = 9;
-    NTA_CHECK(findVector(needle,3,prod));
-
-    needle[0] = 1; needle[1] = 6; needle[2] = 7;
-    NTA_CHECK(findVector(needle,3,prod));
-    needle[0] = 1; needle[1] = 6; needle[2] = 8;
-    NTA_CHECK(findVector(needle,3,prod));
-    needle[0] = 1; needle[1] = 6; needle[2] = 9;
-    NTA_CHECK(findVector(needle,3,prod));
-
-    needle[0] = 2; needle[1] = 4; needle[2] = 7;
-    NTA_CHECK(findVector(needle,3,prod));
-    needle[0] = 2; needle[1] = 4; needle[2] = 8;
-    NTA_CHECK(findVector(needle,3,prod));
-    needle[0] = 2; needle[1] = 4; needle[2] = 9;
-    NTA_CHECK(findVector(needle,3,prod));
-
-    needle[0] = 2; needle[1] = 5; needle[2] = 7;
-    NTA_CHECK(findVector(needle,3,prod));
-    needle[0] = 2; needle[1] = 5; needle[2] = 8;
-    NTA_CHECK(findVector(needle,3,prod));
-    needle[0] = 2; needle[1] = 5; needle[2] = 9;
-    NTA_CHECK(findVector(needle,3,prod));
-
-    needle[0] = 2; needle[1] = 6; needle[2] = 7;
-    NTA_CHECK(findVector(needle,3,prod));
-    needle[0] = 2; needle[1] = 6; needle[2] = 8;
-    NTA_CHECK(findVector(needle,3,prod));
-    needle[0] = 2; needle[1] = 6; needle[2] = 9;
-    NTA_CHECK(findVector(needle,3,prod));
-
-    needle[0] = 3; needle[1] = 4; needle[2] = 7;
-    NTA_CHECK(findVector(needle,3,prod));
-    needle[0] = 3; needle[1] = 4; needle[2] = 8;
-    NTA_CHECK(findVector(needle,3,prod));
-    needle[0] = 3; needle[1] = 4; needle[2] = 9;
-    NTA_CHECK(findVector(needle,3,prod));
-
-    needle[0] = 3; needle[1] = 5; needle[2] = 7;
-    NTA_CHECK(findVector(needle,3,prod));
-    needle[0] = 3; needle[1] = 5; needle[2] = 8;
-    NTA_CHECK(findVector(needle,3,prod));
-    needle[0] = 3; needle[1] = 5; needle[2] = 9;
-    NTA_CHECK(findVector(needle,3,prod));
-
-    needle[0] = 3; needle[1] = 6; needle[2] = 7;
-    NTA_CHECK(findVector(needle,3,prod));
-    needle[0] = 3; needle[1] = 6; needle[2] = 8;
-    NTA_CHECK(findVector(needle,3,prod));
-    needle[0] = 3; needle[1] = 6; needle[2] = 9;
-    NTA_CHECK(findVector(needle,3,prod));
-
-  }
-
-  void SpatialPoolerTest::testGetNeighborsND()
-  {
-    SpatialPooler sp;
-    UInt column;
-    vector<UInt> dimensions;
-    vector<UInt> nums;
-    vector<UInt> neighbors;
-    bool wrapAround;
-    UInt numColumns;
-
-    UInt radius;
-    UInt x,y,z,w;
-    dimensions.clear();
-    dimensions.push_back(4);
-    dimensions.push_back(5);
-    dimensions.push_back(7);
-
-    vector<UInt> neighborsMap;
-    UInt trueNeighbors1[4][5][7];
-    radius = 1;
-    wrapAround = false;
-    z = 1;
-    y = 2;
-    x = 5;
-    numColumns = (4 * 5 * 7);
-
-    for (auto & elem : trueNeighbors1) {
-      for (auto & elem_j : elem) {
-        for (UInt k = 0; k < 7; k++) {
-          elem_j[k] = 0;
-        }
-      }
-    }
-
-    for (Int i = -(Int)radius; i <= (Int)radius; i++) {
-      for (Int j = -(Int)radius; j <= (Int)radius; j++) {
-        for (Int k = -(Int)radius; k <= (Int)radius; k++) {
-          Int zc = (z + i + dimensions[0]) % dimensions[0];
-          Int yc = (y + j + dimensions[1]) % dimensions[1];
-          Int xc = (x + k + dimensions[2]) % dimensions[2];
-          if (i == 0 && j == 0 && k == 0) {
-            continue;
-          }
-          trueNeighbors1[zc][yc][xc] = 1;
-        }
-      }
-    }
-
-    column = (UInt) (&trueNeighbors1[z][y][x] - &trueNeighbors1[0][0][0]);
-    sp.getNeighborsND_(column, dimensions, radius, wrapAround,
-                       neighbors);
-
-    neighborsMap.assign(numColumns, 0);
-    for (auto & neighbor : neighbors) {
-      neighborsMap[neighbor] = 1;
-    }
-    NTA_CHECK(check_vector_eq((UInt*) trueNeighbors1, neighborsMap));
-
-    neighborsMap.clear();
-    w = 4;
-    z = 1;
-    y = 6;
-    x = 3;
-    dimensions.clear();
-    dimensions.push_back(5);
-    dimensions.push_back(6);
-    dimensions.push_back(8);
-    dimensions.push_back(4);
-
-    UInt trueNeighbors2[5][6][8][4];
-    UInt trueNeighbors2Wrap[5][6][8][4];
-    radius = 2;
-    numColumns = (5 * 6 * 8 * 4);
-
-    for (UInt i = 0; i < numColumns; i++) {
-      ((UInt*)trueNeighbors2)[i] = 0;
-      ((UInt*)trueNeighbors2Wrap)[i] = 0;
-    }
-
-    for (Int i = -(Int)radius; i <= (Int)radius; i++) {
-      for (Int j = -(Int)radius; j <= (Int)radius; j++) {
-        for (Int k = -(Int)radius; k <= (Int)radius; k++) {
-          for (Int m = -(Int) radius; m <= (Int) radius; m++) {
-            Int wc = (w + i);
-            Int zc = (z + j);
-            Int yc = (y + k);
-            Int xc = (x + m);
-
-            Int wc_ = emod((w + i), dimensions[0]);
-            Int zc_ = emod((z + j), dimensions[1]);
-            Int yc_ = emod((y + k), dimensions[2]);
-            Int xc_ = emod((x + m), dimensions[3]);
-
-            if (i == 0 && j == 0 && k == 0 && m == 0) {
-              continue;
-            }
-
-            trueNeighbors2Wrap[wc_][zc_][yc_][xc_] = 1;
-
-            if (wc < 0 || wc >= (Int) dimensions[0] ||  // *)
-                zc < 0 || zc >= (Int) dimensions[1] ||
-                yc < 0 || yc >= (Int) dimensions[2] ||
-                xc < 0 || xc >= (Int) dimensions[3]) {
-              continue;
-            }
-// gcc 4.6 / 4.7 has a bug here, issues warning -Warray-bounds which is not true, see *), so suppress it
-#if (__GNUC__ == 4 && ( __GNUC_MINOR__ == 6 || __GNUC_MINOR__ == 7) )
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Warray-bounds"
-#endif
-            trueNeighbors2[wc][zc][yc][xc] = 1;
-#if (__GNUC__ == 4 && ( __GNUC_MINOR__ == 6 || __GNUC_MINOR__ == 7) )
-#pragma GCC diagnostic pop
-#endif
-          }
-        }
-      }
-    }
-
-    column = (UInt) (&trueNeighbors2[w][z][y][x] -
-      &trueNeighbors2[0][0][0][0]);
-    sp.getNeighborsND_(column, dimensions, radius, false,
-                       neighbors);
-
-    neighborsMap.assign(numColumns, 0);
-    for (auto & neighbor : neighbors) {
-      neighborsMap[neighbor] = 1;
-    }
-
-    NTA_CHECK(check_vector_eq((UInt *) trueNeighbors2, neighborsMap));
-
-    sp.getNeighborsND_(column, dimensions, radius, true,
-                       neighbors);
-
-    neighborsMap.assign(numColumns, 0);
-    for (auto & neighbor : neighbors) {
-      neighborsMap[neighbor] = 1;
-    }
-    NTA_CHECK(check_vector_eq((UInt *) trueNeighbors2Wrap, neighborsMap));
-
-
-    // 2D tests repeated here
-    dimensions.clear();
-    dimensions.push_back(6);
-    dimensions.push_back(5);
-
-    numColumns = 30;
-    UInt trueNeighborsMap3[30] =
-      {0, 0, 0, 0, 0,
-       0, 0, 0, 0, 0,
-       0, 1, 1, 1, 0,
-       0, 1, 0, 1, 0,
-       0, 1, 1, 1, 0,
-       0, 0, 0, 0, 0};
-
-    column = 3*5+2;
-    radius = 1;
-    wrapAround = false;
-    sp.getNeighborsND_(column, dimensions, radius, wrapAround, neighbors);
-    neighborsMap.assign(numColumns, 0);
-    for (auto & neighbor : neighbors) {
-      neighborsMap[neighbor] = 1;
-    }
-    NTA_CHECK(check_vector_eq(trueNeighborsMap3, neighborsMap));
-
-    UInt trueNeighborsMap4[30] =
-      {0, 0, 0, 0, 0,
-       1, 1, 1, 1, 1,
-       1, 1, 1, 1, 1,
-       1, 1, 0, 1, 1,
-       1, 1, 1, 1, 1,
-       1, 1, 1, 1, 1};
-
-    column = 3*5+2;
-    radius = 2;
-    wrapAround = false;
-    sp.getNeighborsND_(column, dimensions, radius, wrapAround, neighbors);
-    neighborsMap.assign(numColumns, 0);
-    for (auto & neighbor : neighbors) {
-      neighborsMap[neighbor] = 1;
-    }
-    NTA_CHECK(check_vector_eq(trueNeighborsMap4, neighborsMap));
-
-    UInt trueNeighborsMap5[30] =
-      {1, 0, 0, 1, 1,
-       0, 0, 0, 0, 0,
-       0, 0, 0, 0, 0,
-       0, 0, 0, 0, 0,
-       1, 0, 0, 1, 1,
-       1, 0, 0, 1, 0};
-
-    column = 29;
-    radius = 1;
-    wrapAround = true;
-    sp.getNeighborsND_(column, dimensions, radius, wrapAround, neighbors);
-    neighborsMap.assign(numColumns, 0);
-    for (auto & neighbor : neighbors) {
-      neighborsMap[neighbor] = 1;
-    }
-    NTA_CHECK(check_vector_eq(trueNeighborsMap5, neighborsMap));
-
-    dimensions.clear();
-    dimensions.push_back(8);
-    numColumns = 8;
-
-    UInt trueNeighborsMap6[8] = { 0, 0, 1, 0, 1, 0, 0, 0 };
-    column = 3;
-    radius = 1;
-    wrapAround = true;
-    sp.getNeighborsND_(column, dimensions, radius, wrapAround,
-                          neighbors);
-    neighborsMap.assign(numColumns, 0);
-    for (auto & neighbor : neighbors) {
-      neighborsMap[neighbor] = 1;
-    }
-    NTA_CHECK(check_vector_eq(trueNeighborsMap6, neighborsMap));
-
-    UInt trueNeighborsMap7[8] = { 0, 1, 1, 0, 1, 1, 0, 0 };
-    column = 3;
-    radius = 2;
-    wrapAround = false;
-    sp.getNeighborsND_(column, dimensions, radius, wrapAround,
-                          neighbors);
-    neighborsMap.assign(numColumns, 0);
-    for (auto & neighbor : neighbors) {
-      neighborsMap[neighbor] = 1;
-    }
-    NTA_CHECK(check_vector_eq(trueNeighborsMap7, neighborsMap));
-
-    UInt trueNeighborsMap8[8] = { 0, 1, 1, 0, 0, 0, 1, 1 };
-    column = 0;
-    radius = 2;
-    wrapAround = true;
-    sp.getNeighborsND_(column, dimensions, radius, wrapAround,
-                          neighbors);
-    neighborsMap.assign(numColumns, 0);
-    for (auto & neighbor : neighbors) {
-      neighborsMap[neighbor] = 1;
-    }
-    NTA_CHECK(check_vector_eq(trueNeighborsMap8, neighborsMap));
-
-    // Test with radius larger than the dimension range
-    UInt trueNeighborsMap9[8] = { 0, 1, 1, 1, 1, 1, 1, 1 };
-    column = 0;
-    radius = 100;
-    wrapAround = false;
-    sp.getNeighborsND_(column, dimensions, radius, wrapAround,
-                          neighbors);
-    neighborsMap.assign(numColumns, 0);
-    for (auto & neighbor : neighbors) {
-      neighborsMap[neighbor] = 1;
-    }
-    NTA_CHECK(check_vector_eq(trueNeighborsMap9, neighborsMap));
-
-    // Test with radius larger than the dimension range,
-    // with wrapAround enabled
-    UInt trueNeighborsMap10[8] = { 0, 1, 1, 1, 1, 1, 1, 1 };
-    column = 0;
-    radius = 100;
-    wrapAround = true;
-    sp.getNeighborsND_(column, dimensions, radius, wrapAround,
-                          neighbors);
-    neighborsMap.assign(numColumns, 0);
-    for (auto & neighbor : neighbors) {
-      neighborsMap[neighbor] = 1;
-    }
-    NTA_CHECK(check_vector_eq(trueNeighborsMap10, neighborsMap));
-
-  }
-
-  void SpatialPoolerTest::testIsUpdateRound()
+  TEST(SpatialPoolerTest, testIsUpdateRound)
   {
     SpatialPooler sp;
     sp.setUpdatePeriod(50);
     sp.setIterationNum(1);
-    NTA_CHECK(!sp.isUpdateRound_());
+    ASSERT_TRUE(!sp.isUpdateRound_());
     sp.setIterationNum(39);
-    NTA_CHECK(!sp.isUpdateRound_());
+    ASSERT_TRUE(!sp.isUpdateRound_());
     sp.setIterationNum(50);
-    NTA_CHECK(sp.isUpdateRound_());
+    ASSERT_TRUE(sp.isUpdateRound_());
     sp.setIterationNum(1009);
-    NTA_CHECK(!sp.isUpdateRound_());
+    ASSERT_TRUE(!sp.isUpdateRound_());
     sp.setIterationNum(1250);
-    NTA_CHECK(sp.isUpdateRound_());
+    ASSERT_TRUE(sp.isUpdateRound_());
 
     sp.setUpdatePeriod(125);
     sp.setIterationNum(0);
-    NTA_CHECK(sp.isUpdateRound_());
+    ASSERT_TRUE(sp.isUpdateRound_());
     sp.setIterationNum(200);
-    NTA_CHECK(!sp.isUpdateRound_());
+    ASSERT_TRUE(!sp.isUpdateRound_());
     sp.setIterationNum(249);
-    NTA_CHECK(!sp.isUpdateRound_());
+    ASSERT_TRUE(!sp.isUpdateRound_());
     sp.setIterationNum(1330);
-    NTA_CHECK(!sp.isUpdateRound_());
+    ASSERT_TRUE(!sp.isUpdateRound_());
     sp.setIterationNum(1249);
-    NTA_CHECK(!sp.isUpdateRound_());
+    ASSERT_TRUE(!sp.isUpdateRound_());
     sp.setIterationNum(1375);
-    NTA_CHECK(sp.isUpdateRound_());
+    ASSERT_TRUE(sp.isUpdateRound_());
 
   }
 
-  void SpatialPoolerTest::testRaisePermanencesToThreshold()
+  TEST(SpatialPoolerTest, testRaisePermanencesToThreshold)
   {
     SpatialPooler sp;
     UInt stimulusThreshold = 3;
@@ -2174,13 +1750,13 @@ namespace nupic {
       }
       UInt connected =
         sp.raisePermanencesToThreshold_(perm, potential);
-      NTA_CHECK(check_vector_eq(truePerm[i],perm));
-      NTA_CHECK(connected == trueConnectedCount[i]);
+      ASSERT_TRUE(check_vector_eq(truePerm[i],perm));
+      ASSERT_TRUE(connected == trueConnectedCount[i]);
     }
 
   }
 
-  void SpatialPoolerTest::testUpdatePermanencesForColumn()
+  TEST(SpatialPoolerTest, testUpdatePermanencesForColumn)
   {
     vector<UInt> inputDim;
     vector<UInt> columnDim;
@@ -2230,10 +1806,10 @@ namespace nupic {
       sp.getPermanence(i, permArr);
       sp.getConnectedSynapses(i, connectedArr);
       sp.getConnectedCounts(connectedCountsArr);
-      NTA_CHECK(check_vector_eq(truePerm[i], permArr, numInputs));
-      NTA_CHECK(check_vector_eq(trueConnectedSynapses[i],connectedArr,
+      ASSERT_TRUE(check_vector_eq(truePerm[i], permArr, numInputs));
+      ASSERT_TRUE(check_vector_eq(trueConnectedSynapses[i],connectedArr,
                                 numInputs));
-      NTA_CHECK(trueConnectedCount[i] == connectedCountsArr[i]);
+      ASSERT_TRUE(trueConnectedCount[i] == connectedCountsArr[i]);
       delete[] permArr;
       delete[] connectedArr;
       delete[] connectedCountsArr;
@@ -2241,7 +1817,7 @@ namespace nupic {
 
   }
 
-  void SpatialPoolerTest::testInitPermanence()
+  TEST(SpatialPoolerTest, testInitPermanence)
   {
     vector<UInt> inputDim;
     vector<UInt> columnDim;
@@ -2262,16 +1838,16 @@ namespace nupic {
     vector<Real> perm = sp.initPermanence_(potential, 1.0);
     for (UInt i = 0; i < 8; i++)
       if (potential[i])
-        NTA_CHECK(perm[i] >= synPermConnected);
+        ASSERT_TRUE(perm[i] >= synPermConnected);
       else
-        NTA_CHECK(perm[i] < 1e-5);
+        ASSERT_TRUE(perm[i] < 1e-5);
 
     perm = sp.initPermanence_(potential, 0);
     for (UInt i = 0; i < 8; i++)
       if (potential[i])
-        NTA_CHECK(perm[i] <= synPermConnected);
+        ASSERT_TRUE(perm[i] <= synPermConnected);
       else
-        NTA_CHECK(perm[i] < 1e-5);
+        ASSERT_TRUE(perm[i] < 1e-5);
 
     inputDim[0] = 100;
     sp.initialize(inputDim,columnDim);
@@ -2287,14 +1863,14 @@ namespace nupic {
     int count = 0;
     for (UInt i = 0; i < 100; i++)
     {
-      NTA_CHECK(perm[i] < 1e-5 || perm[i] >= synPermTrimThreshold);
+      ASSERT_TRUE(perm[i] < 1e-5 || perm[i] >= synPermTrimThreshold);
       if (perm[i] >= synPermConnected)
         count++;
     }
-    NTA_CHECK(count > 5 && count < 95);
+    ASSERT_TRUE(count > 5 && count < 95);
   }
 
-  void SpatialPoolerTest::testInitPermConnected()
+  TEST(SpatialPoolerTest, testInitPermConnected)
   {
     SpatialPooler sp;
     Real synPermConnected = 0.2;
@@ -2305,82 +1881,84 @@ namespace nupic {
 
     for (UInt i = 0; i < 100; i++) {
       Real permVal = sp.initPermConnected_();
-      NTA_CHECK(permVal >= synPermConnected &&
+      ASSERT_TRUE(permVal >= synPermConnected &&
                 permVal <= synPermMax);
     }
   }
 
-  void SpatialPoolerTest::testInitPermNonConnected()
+  TEST(SpatialPoolerTest, testInitPermNonConnected)
   {
     SpatialPooler sp;
     Real synPermConnected = 0.2;
     sp.setSynPermConnected(synPermConnected);
     for (UInt i = 0; i < 100; i++) {
       Real permVal = sp.initPermNonConnected_();
-      NTA_CHECK(permVal >= 0 &&
+      ASSERT_TRUE(permVal >= 0 &&
                 permVal <= synPermConnected);
     }
   }
 
-  void SpatialPoolerTest::testMapColumn()
+  TEST(SpatialPoolerTest, testMapColumn)
   {
-    vector<UInt> inputDim, columnDim;
-    SpatialPooler sp;
+    {
+      // Test 1D.
+      SpatialPooler sp(
+        /*inputDimensions*/{12},
+        /*columnDimensions*/{4});
 
-    // Test 1D
-    inputDim.push_back(12);
-    columnDim.push_back(4);
-    sp.initialize(inputDim, columnDim);
+      EXPECT_EQ(1, sp.mapColumn_(0));
+      EXPECT_EQ(4, sp.mapColumn_(1));
+      EXPECT_EQ(7, sp.mapColumn_(2));
+      EXPECT_EQ(10, sp.mapColumn_(3));
+    }
 
-    NTA_ASSERT(sp.mapColumn_(0) == 1);
-    NTA_ASSERT(sp.mapColumn_(1) == 4);
-    NTA_ASSERT(sp.mapColumn_(2) == 7);
-    NTA_ASSERT(sp.mapColumn_(3) == 10);
+    {
+      // Test 1D with same dimensions of columns and inputs.
+      SpatialPooler sp(
+        /*inputDimensions*/{4},
+        /*columnDimensions*/{4});
 
-    columnDim.clear();
-    inputDim.clear();
+      EXPECT_EQ(0, sp.mapColumn_(0));
+      EXPECT_EQ(1, sp.mapColumn_(1));
+      EXPECT_EQ(2, sp.mapColumn_(2));
+      EXPECT_EQ(3, sp.mapColumn_(3));
+    }
 
-    // Test 1D with same dimensions of columns and inputs
-    inputDim.push_back(4);
-    columnDim.push_back(4);
-    sp.initialize(inputDim, columnDim);
+    {
+      // Test 1D with dimensions of length 1.
+      SpatialPooler sp(
+        /*inputDimensions*/{1},
+        /*columnDimensions*/{1});
 
-    NTA_ASSERT(sp.mapColumn_(0) == 0);
-    NTA_ASSERT(sp.mapColumn_(1) == 1);
-    NTA_ASSERT(sp.mapColumn_(2) == 2);
-    NTA_ASSERT(sp.mapColumn_(3) == 3);
+      EXPECT_EQ(0, sp.mapColumn_(0));
+    }
 
-    columnDim.clear();
-    inputDim.clear();
+    {
+      // Test 2D.
+      SpatialPooler sp(
+        /*inputDimensions*/{36, 12},
+        /*columnDimensions*/{12, 4});
 
-    // Test 1D with dimensions of length 1
-    inputDim.push_back(1);
-    columnDim.push_back(1);
-    sp.initialize(inputDim, columnDim);
+      EXPECT_EQ(13, sp.mapColumn_(0));
+      EXPECT_EQ(49, sp.mapColumn_(4));
+      EXPECT_EQ(52, sp.mapColumn_(5));
+      EXPECT_EQ(58, sp.mapColumn_(7));
+      EXPECT_EQ(418, sp.mapColumn_(47));
+    }
 
-    NTA_ASSERT(sp.mapColumn_(0) == 0);
+    {
+      // Test 2D, some input dimensions smaller than column dimensions.
+      SpatialPooler sp(
+        /*inputDimensions*/{3, 5},
+        /*columnDimensions*/{4, 4});
 
-    columnDim.clear();
-    inputDim.clear();
-
-    // Test 2D
-    inputDim.push_back(36);
-    inputDim.push_back(12);
-    columnDim.push_back(12);
-    columnDim.push_back(4);
-    sp.initialize(inputDim, columnDim);
-
-    NTA_ASSERT(sp.mapColumn_(0) == 13);
-    NTA_ASSERT(sp.mapColumn_(4) == 49);
-    NTA_ASSERT(sp.mapColumn_(5) == 52);
-    NTA_ASSERT(sp.mapColumn_(7) == 58);
-    NTA_ASSERT(sp.mapColumn_(47) == 418);
-
-    columnDim.clear();
-    inputDim.clear();
+      EXPECT_EQ(0, sp.mapColumn_(0));
+      EXPECT_EQ(4, sp.mapColumn_(3));
+      EXPECT_EQ(14, sp.mapColumn_(15));
+    }
   }
 
-  void SpatialPoolerTest::testMapPotential1D()
+  TEST(SpatialPoolerTest, testMapPotential1D)
   {
     vector<UInt> inputDim, columnDim;
     inputDim.push_back(12);
@@ -2398,38 +1976,38 @@ namespace nupic {
 
     UInt expectedMask1[12] = {1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0};
     mask = sp.mapPotential_(0, false);
-    NTA_CHECK(check_vector_eq(expectedMask1, mask));
+    ASSERT_TRUE(check_vector_eq(expectedMask1, mask));
 
     UInt expectedMask2[12] = {0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0};
     mask = sp.mapPotential_(2, false);
-    NTA_CHECK(check_vector_eq(expectedMask2, mask));
+    ASSERT_TRUE(check_vector_eq(expectedMask2, mask));
 
     // Test with wrapAround and potentialPct = 1
     sp.setPotentialPct(1.0);
 
     UInt expectedMask3[12] = {1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1};
     mask = sp.mapPotential_(0, true);
-    NTA_CHECK(check_vector_eq(expectedMask3, mask));
+    ASSERT_TRUE(check_vector_eq(expectedMask3, mask));
 
     UInt expectedMask4[12] = {1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1};
     mask = sp.mapPotential_(3, true);
-    NTA_CHECK(check_vector_eq(expectedMask4, mask));
+    ASSERT_TRUE(check_vector_eq(expectedMask4, mask));
 
     // Test with potentialPct < 1
     sp.setPotentialPct(0.5);
     UInt supersetMask1[12] = {1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1};
     mask = sp.mapPotential_(0, true);
-    NTA_ASSERT(sum(mask) == 3);
+    ASSERT_TRUE(sum(mask) == 3);
 
     UInt unionMask1[12] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
     for (UInt i = 0; i < 12; i++) {
       unionMask1[i] = supersetMask1[i] | mask.at(i);
     }
 
-    NTA_CHECK(check_vector_eq(unionMask1, supersetMask1, 12));
+    ASSERT_TRUE(check_vector_eq(unionMask1, supersetMask1, 12));
   }
 
-  void SpatialPoolerTest::testMapPotential2D()
+  TEST(SpatialPoolerTest, testMapPotential2D)
   {
     vector<UInt> inputDim, columnDim;
     inputDim.push_back(6);
@@ -2456,7 +2034,7 @@ namespace nupic {
       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
     };
     mask = sp.mapPotential_(0, false);
-    NTA_CHECK(check_vector_eq(expectedMask1, mask));
+    ASSERT_TRUE(check_vector_eq(expectedMask1, mask));
 
     UInt expectedMask2[72] = {
       0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0,
@@ -2467,7 +2045,7 @@ namespace nupic {
       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
     };
     mask = sp.mapPotential_(2, false);
-    NTA_CHECK(check_vector_eq(expectedMask2, mask));
+    ASSERT_TRUE(check_vector_eq(expectedMask2, mask));
 
     // Test with wrapAround
     potentialRadius = 2;
@@ -2481,7 +2059,7 @@ namespace nupic {
       1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1
     };
     mask = sp.mapPotential_(0, true);
-    NTA_CHECK(check_vector_eq(expectedMask3, mask));
+    ASSERT_TRUE(check_vector_eq(expectedMask3, mask));
 
     UInt expectedMask4[72] = {
       1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1,
@@ -2492,10 +2070,10 @@ namespace nupic {
       1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1
     };
     mask = sp.mapPotential_(3, true);
-    NTA_CHECK(check_vector_eq(expectedMask4, mask));
+    ASSERT_TRUE(check_vector_eq(expectedMask4, mask));
   }
 
-  void SpatialPoolerTest::testStripUnlearnedColumns()
+  TEST(SpatialPoolerTest, testStripUnlearnedColumns)
   {
     SpatialPooler sp;
     vector<UInt> inputDim, columnDim;
@@ -2512,7 +2090,7 @@ namespace nupic {
       sp.setActiveDutyCycles(activeDutyCycles);
       sp.stripUnlearnedColumns(activeArray);
 
-      TEST(check_vector_eq(activeArray, expected, 3));
+      ASSERT_TRUE(check_vector_eq(activeArray, expected, 3));
     }
 
     // None learned, some active
@@ -2524,7 +2102,7 @@ namespace nupic {
       sp.setActiveDutyCycles(activeDutyCycles);
       sp.stripUnlearnedColumns(activeArray);
 
-      TEST(check_vector_eq(activeArray, expected, 3));
+      ASSERT_TRUE(check_vector_eq(activeArray, expected, 3));
     }
 
     // Some learned, none active
@@ -2536,7 +2114,7 @@ namespace nupic {
       sp.setActiveDutyCycles(activeDutyCycles);
       sp.stripUnlearnedColumns(activeArray);
 
-      TEST(check_vector_eq(activeArray, expected, 3));
+      ASSERT_TRUE(check_vector_eq(activeArray, expected, 3));
     }
 
     // Some learned, some active
@@ -2548,11 +2126,173 @@ namespace nupic {
       sp.setActiveDutyCycles(activeDutyCycles);
       sp.stripUnlearnedColumns(activeArray);
 
-      TEST(check_vector_eq(activeArray, expected, 3));
+      ASSERT_TRUE(check_vector_eq(activeArray, expected, 3));
     }
   }
 
-  void SpatialPoolerTest::testSaveLoad()
+  TEST(SpatialPoolerTest, getOverlaps)
+  {
+    SpatialPooler sp;
+    const vector<UInt> inputDim = {5};
+    const vector<UInt> columnDim = {3};
+    sp.initialize(inputDim, columnDim);
+
+    UInt potential[5] = {1, 1, 1, 1, 1};
+    sp.setPotential(0, potential);
+    sp.setPotential(1, potential);
+    sp.setPotential(2, potential);
+
+    Real permanence0[5] = {0.0, 0.0, 0.0, 0.0, 0.0};
+    sp.setPermanence(0, permanence0);
+    Real permanence1[5] = {1.0, 1.0, 1.0, 0.0, 0.0};
+    sp.setPermanence(1, permanence1);
+    Real permanence2[5] = {1.0, 1.0, 1.0, 1.0, 1.0};
+    sp.setPermanence(2, permanence2);
+
+    vector<Real> boostFactors = {1.0, 2.0, 3.0};
+    sp.setBoostFactors(boostFactors.data());
+
+    vector<UInt> input = {1, 1, 1, 1, 1};
+    vector<UInt> activeColumns = {0, 0, 0};
+    sp.compute(input.data(), true, activeColumns.data());
+
+    const vector<UInt>& overlaps = sp.getOverlaps();
+    const vector<UInt> expectedOverlaps = {0, 3, 5};
+    EXPECT_EQ(expectedOverlaps, overlaps);
+
+    const vector<Real>& boostedOverlaps = sp.getBoostedOverlaps();
+    const vector<Real> expectedBoostedOverlaps = {0.0, 6.0, 15.0};
+    EXPECT_EQ(expectedBoostedOverlaps, boostedOverlaps);
+  }
+
+  TEST(SpatialPoolerTest, ZeroOverlap_NoStimulusThreshold_GlobalInhibition)
+  {
+    const UInt inputSize = 10;
+    const UInt nColumns = 20;
+
+    SpatialPooler sp({inputSize},
+                     {nColumns},
+                     /*potentialRadius*/ 10,
+                     /*potentialPct*/ 0.5,
+                     /*globalInhibition*/ true,
+                     /*localAreaDensity*/ -1.0,
+                     /*numActiveColumnsPerInhArea*/ 3,
+                     /*stimulusThreshold*/ 0,
+                     /*synPermInactiveDec*/ 0.008,
+                     /*synPermActiveInc*/ 0.05,
+                     /*synPermConnected*/ 0.1,
+                     /*minPctOverlapDutyCycles*/ 0.001,
+                     /*minPctActiveDutyCycles*/ 0.001,
+                     /*dutyCyclePeriod*/ 1000,
+                     /*maxBoost*/ 10.0,
+                     /*seed*/ 1,
+                     /*spVerbosity*/ 0,
+                     /*wrapAround*/ true);
+
+    vector<UInt> input(inputSize, 0);
+    vector<UInt> activeColumns(nColumns, 0);
+    sp.compute(input.data(), true, activeColumns.data());
+
+    EXPECT_EQ(3, countNonzero(activeColumns));
+  }
+
+  TEST(SpatialPoolerTest, ZeroOverlap_StimulusThreshold_GlobalInhibition)
+  {
+    const UInt inputSize = 10;
+    const UInt nColumns = 20;
+
+    SpatialPooler sp({inputSize},
+                     {nColumns},
+                     /*potentialRadius*/ 5,
+                     /*potentialPct*/ 0.5,
+                     /*globalInhibition*/ true,
+                     /*localAreaDensity*/ -1.0,
+                     /*numActiveColumnsPerInhArea*/ 1,
+                     /*stimulusThreshold*/ 1,
+                     /*synPermInactiveDec*/ 0.008,
+                     /*synPermActiveInc*/ 0.05,
+                     /*synPermConnected*/ 0.1,
+                     /*minPctOverlapDutyCycles*/ 0.001,
+                     /*minPctActiveDutyCycles*/ 0.001,
+                     /*dutyCyclePeriod*/ 1000,
+                     /*maxBoost*/ 10.0,
+                     /*seed*/ 1,
+                     /*spVerbosity*/ 0,
+                     /*wrapAround*/ true);
+
+    vector<UInt> input(inputSize, 0);
+    vector<UInt> activeColumns(nColumns, 0);
+    sp.compute(input.data(), true, activeColumns.data());
+
+    EXPECT_EQ(0, countNonzero(activeColumns));
+  }
+
+  TEST(SpatialPoolerTest, ZeroOverlap_NoStimulusThreshold_LocalInhibition)
+  {
+    const UInt inputSize = 10;
+    const UInt nColumns = 20;
+
+    SpatialPooler sp({inputSize},
+                     {nColumns},
+                     /*potentialRadius*/ 5,
+                     /*potentialPct*/ 0.5,
+                     /*globalInhibition*/ false,
+                     /*localAreaDensity*/ -1.0,
+                     /*numActiveColumnsPerInhArea*/ 1,
+                     /*stimulusThreshold*/ 0,
+                     /*synPermInactiveDec*/ 0.008,
+                     /*synPermActiveInc*/ 0.05,
+                     /*synPermConnected*/ 0.1,
+                     /*minPctOverlapDutyCycles*/ 0.001,
+                     /*minPctActiveDutyCycles*/ 0.001,
+                     /*dutyCyclePeriod*/ 1000,
+                     /*maxBoost*/ 10.0,
+                     /*seed*/ 1,
+                     /*spVerbosity*/ 0,
+                     /*wrapAround*/ true);
+
+    vector<UInt> input(inputSize, 0);
+    vector<UInt> activeColumns(nColumns, 0);
+    sp.compute(input.data(), true, activeColumns.data());
+
+    // This exact number of active columns is determined by the inhibition
+    // radius, which changes based on the random synapses (i.e. weird math).
+    EXPECT_GT(countNonzero(activeColumns), 2);
+    EXPECT_LT(countNonzero(activeColumns), 10);
+  }
+
+  TEST(SpatialPoolerTest, ZeroOverlap_StimulusThreshold_LocalInhibition)
+  {
+    const UInt inputSize = 10;
+    const UInt nColumns = 20;
+
+    SpatialPooler sp({inputSize},
+                     {nColumns},
+                     /*potentialRadius*/ 10,
+                     /*potentialPct*/ 0.5,
+                     /*globalInhibition*/ false,
+                     /*localAreaDensity*/ -1.0,
+                     /*numActiveColumnsPerInhArea*/ 3,
+                     /*stimulusThreshold*/ 1,
+                     /*synPermInactiveDec*/ 0.008,
+                     /*synPermActiveInc*/ 0.05,
+                     /*synPermConnected*/ 0.1,
+                     /*minPctOverlapDutyCycles*/ 0.001,
+                     /*minPctActiveDutyCycles*/ 0.001,
+                     /*dutyCyclePeriod*/ 1000,
+                     /*maxBoost*/ 10.0,
+                     /*seed*/ 1,
+                     /*spVerbosity*/ 0,
+                     /*wrapAround*/ true);
+
+    vector<UInt> input(inputSize, 0);
+    vector<UInt> activeColumns(nColumns, 0);
+    sp.compute(input.data(), true, activeColumns.data());
+
+    EXPECT_EQ(0, countNonzero(activeColumns));
+  }
+
+  TEST(SpatialPoolerTest, testSaveLoad)
   {
     const char* filename = "SpatialPoolerSerialization.tmp";
     SpatialPooler sp1, sp2;
@@ -2569,13 +2309,14 @@ namespace nupic {
     sp2.load(infile);
     infile.close();
 
-    check_spatial_eq(sp1, sp2);
+    ASSERT_NO_FATAL_FAILURE(
+      check_spatial_eq(sp1, sp2));
 
     int ret = ::remove(filename);
-    NTA_CHECK(ret == 0) << "Failed to delete " << filename;
+    ASSERT_TRUE(ret == 0) << "Failed to delete " << filename;
   }
 
-  void SpatialPoolerTest::testWriteRead()
+  TEST(SpatialPoolerTest, testWriteRead)
   {
     const char* filename = "SpatialPoolerSerialization.tmp";
     SpatialPooler sp1, sp2;
@@ -2591,10 +2332,11 @@ namespace nupic {
     sp2.read(is);
     is.close();
 
-    check_spatial_eq(sp1, sp2);
+    ASSERT_NO_FATAL_FAILURE(
+      check_spatial_eq(sp1, sp2));
 
     int ret = ::remove(filename);
-    NTA_CHECK(ret == 0) << "Failed to delete " << filename;
+    ASSERT_TRUE(ret == 0) << "Failed to delete " << filename;
   }
 
-} // end namespace nupic
+} // end anonymous namespace

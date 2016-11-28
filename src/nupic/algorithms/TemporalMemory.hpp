@@ -1,6 +1,6 @@
 /* ---------------------------------------------------------------------
  * Numenta Platform for Intelligent Computing (NuPIC)
- * Copyright (C) 2013-2015, Numenta, Inc.  Unless you have an agreement
+ * Copyright (C) 2013-2016, Numenta, Inc.  Unless you have an agreement
  * with Numenta, Inc., for a separate license for this software code, the
  * following terms and conditions apply:
  *
@@ -28,6 +28,7 @@
 #define NTA_TEMPORAL_MEMORY_HPP
 
 #include <vector>
+#include <nupic/types/Serializable.hpp>
 #include <nupic/types/Types.hpp>
 #include <nupic/utils/Random.hpp>
 #include <nupic/algorithms/Connections.hpp>
@@ -43,45 +44,85 @@ namespace nupic {
     namespace temporal_memory {
 
       /**
-       * CLA temporal memory implementation in C++.
-       *
-       * The primary public interfaces to this function are the "initialize"
-       * and "compute" methods.
+       * Temporal Memory implementation in C++.
        *
        * Example usage:
        *
-       *     SpatialPooler sp;
-       *     sp.initialize(inputDimensions, columnDimensions, <parameters>);
-       *
-       *     TemporalMemory tm;
-       *     tm.initialize(columnDimensions, <parameters>);
+       *     SpatialPooler sp(inputDimensions, columnDimensions, <parameters>);
+       *     TemporalMemory tm(columnDimensions, <parameters>);
        *
        *     while (true) {
        *        <get input vector, streaming spatiotemporal information>
        *        sp.compute(inputVector, learn, activeColumns)
        *        tm.compute(number of activeColumns, activeColumns, learn)
-       *        <do something with output, e.g. add classifiers>
+       *        <do something with the tm, e.g. classify tm.getActiveCells()>
        *     }
        *
+       * The public API uses C arrays, not std::vectors, as inputs. C arrays are
+       * a good lowest common denominator. You can get a C array from a vector,
+       * but you can't get a vector from a C array without copying it. This is
+       * important, for example, when using numpy arrays. The only way to
+       * convert a numpy array into a std::vector is to copy it, but you can
+       * access a numpy array's internal C array directly.
        */
-      class TemporalMemory {
+      class TemporalMemory : public Serializable<TemporalMemoryProto> {
       public:
         TemporalMemory();
 
         /**
          * Initialize the temporal memory (TM) using the given parameters.
          *
-         * @param columnDimensions     Dimensions of the column space
-         * @param cellsPerColumn       Number of cells per column
-         * @param activationThreshold  If the number of active connected synapses on a segment is at least this threshold, the segment is said to be active.
-         * @param initialPermanence    Initial permanence of a new synapse.
-         * @param connectedPermanence  If the permanence value for a synapse is greater than this value, it is said to be connected.
-         * @param minThreshold         If the number of synapses active on a segment is at least this threshold, it is selected as the best matching cell in a bursting column.
-         * @param maxNewSynapseCount   The maximum number of synapses added to a segment during learning.
-         * @param permanenceIncrement  Amount by which permanences of synapses are incremented during learning.
-         * @param permanenceDecrement  Amount by which permanences of synapses are decremented during learning.
-         * @param predictedSegmentDecrement Amount by which active permanences of synapses of previously predicted but inactive segments are decremented.
-         * @param seed                 Seed for the random number generator.
+         * @param columnDimensions
+         * Dimensions of the column space
+         *
+         * @param cellsPerColumn
+         * Number of cells per column
+         *
+         * @param activationThreshold
+         * If the number of active connected synapses on a segment is at least
+         * this threshold, the segment is said to be active.
+         *
+         * @param initialPermanence
+         * Initial permanence of a new synapse.
+         *
+         * @param connectedPermanence
+         * If the permanence value for a synapse is greater than this value, it
+         * is said to be connected.
+         *
+         * @param minThreshold
+         * If the number of potential synapses active on a segment is at least
+         * this threshold, it is said to be "matching" and is eligible for
+         * learning.
+         *
+         * @param maxNewSynapseCount
+         * The maximum number of synapses added to a segment during learning.
+         *
+         * @param permanenceIncrement
+         * Amount by which permanences of synapses are incremented during
+         * learning.
+         *
+         * @param permanenceDecrement
+         * Amount by which permanences of synapses are decremented during
+         * learning.
+         *
+         * @param predictedSegmentDecrement
+         * Amount by which segments are punished for incorrect predictions.
+         *
+         * @param seed
+         * Seed for the random number generator.
+         *
+         * @param maxSegmentsPerCell
+         * The maximum number of segments per cell.
+         *
+         * @param maxSynapsesPerSegment
+         * The maximum number of synapses per segment.
+         *
+         * Notes:
+         *
+         * predictedSegmentDecrement: A good value is just a bit larger than
+         * (the column-level sparsity * permanenceIncrement). So, if column-level
+         * sparsity is 2% and permanenceIncrement is 0.01, this parameter should be
+         * something like 4% * 0.01 = 0.0004).
          */
         TemporalMemory(
           vector<UInt> columnDimensions,
@@ -94,7 +135,9 @@ namespace nupic {
           Permanence permanenceIncrement = 0.10,
           Permanence permanenceDecrement = 0.10,
           Permanence predictedSegmentDecrement = 0.0,
-          Int seed = 42);
+          Int seed = 42,
+          UInt maxSegmentsPerCell=255,
+          UInt maxSynapsesPerSegment=255);
 
         virtual void initialize(
           vector<UInt> columnDimensions = { 2048 },
@@ -107,7 +150,9 @@ namespace nupic {
           Permanence permanenceIncrement = 0.10,
           Permanence permanenceDecrement = 0.10,
           Permanence predictedSegmentDecrement = 0.0,
-          Int seed = 42);
+          Int seed = 42,
+          UInt maxSegmentsPerCell=255,
+          UInt maxSynapsesPerSegment=255);
 
         virtual ~TemporalMemory();
 
@@ -120,9 +165,7 @@ namespace nupic {
          *
          * @returns Integer version number.
          */
-        virtual UInt version() const {
-          return version_;
-        };
+        virtual UInt version() const;
 
         /**
          * This *only* updates _rng to a new Random using seed.
@@ -138,188 +181,53 @@ namespace nupic {
         virtual void reset();
 
         /**
-         * Feeds input record through TM, performing inference and learning.
-         * Updates member variables with new state.
+         * Calculate the active cells, using the current active columns and
+         * dendrite segments. Grow and reinforce synapses.
          *
-         * @param activeColumnsSize Number of active columns
-         * @param activeColumns     Indices of active columns in `t`
-         * @param learn             Whether or not learning is enabled
+         * @param activeColumnsSize
+         * Size of activeColumns.
+         *
+         * @param activeColumns
+         * A sorted list of active column indices.
+         *
+         * @param learn
+         * If true, reinforce / punish / grow synapses.
+         */
+        void activateCells(
+          size_t activeColumnsSize,
+          const UInt activeColumns[],
+          bool learn = true);
+
+        /**
+         * Calculate dendrite segment activity, using the current active cells.
+         *
+         * @param learn
+         * If true, segment activations will be recorded. This information is
+         * used during segment cleanup.
+         */
+        void activateDendrites(bool learn = true);
+
+        /**
+         * Perform one time step of the Temporal Memory algorithm.
+         *
+         * This method calls activateCells, then calls activateDendrites. Using
+         * the TemporalMemory via its compute method ensures that you'll always
+         * be able to call getPredictiveCells to get predictions for the next
+         * time step.
+         *
+         * @param activeColumnsSize
+         * Number of active columns.
+         *
+         * @param activeColumns
+         * Sorted list of indices of active columns.
+         *
+         * @param learn
+         * Whether or not learning is enabled.
          */
         virtual void compute(
-          UInt activeColumnsSize, UInt activeColumns[], bool learn = true);
-
-        /**
-         * 'Functional' version of compute. Returns new state.
-         *
-         * @param activeColumns         Indices of active columns in `t`
-         * @param prevPredictiveCells   Indices of predictive cells in `t-1`
-         * @param prevActiveSegments    Indices of active segments in `t-1`
-         * @param prevActiveCells       Indices of active cells in `t-1`
-         * @param prevWinnerCells       Indices of winner cells in `t-1`
-         * @param prevMatchingSegments  Indices of matching segments in `t-1`
-         * @param prevMatchingCells     Indices of matching cells in `t-1`
-         * @param connections           Connectivity of layer
-         * @param learn                 Whether or not learning is enabled
-         *
-         * @return (tuple)Contains:
-         *  `activeCells`       (set),
-         *  `winnerCells`       (set),
-         *  `activeSegments`    (set),
-         *  `predictiveCells`   (set),
-         *  `predictedColumns`  (set),
-         *  `matchingSegments`  (set),
-         *  `matchingCells`     (set)
-         */
-        tuple<set<Cell>, set<Cell>, vector<Segment>, set<Cell>,
-          set<UInt>, vector<Segment>, set<Cell >>
-          computeFn(
-            UInt activeColumnsSize,
-            UInt activeColumns[],
-            set<Cell>& prevPredictiveCells,
-            vector<Segment>& prevActiveSegments,
-            set<Cell>& prevActiveCells,
-            set<Cell>& prevWinnerCells,
-            vector<Segment>& prevMatchingSegments,
-            set<Cell>& prevMatchingCells,
-            Connections& connections,
-            bool learn = true);
-
-        // ==============================
-        //  Phases
-        // ==============================
-
-        /**
-         * Phase 1 : Activate the correctly predictive cells.
-         *
-         * Pseudocode :
-         *
-         * - for each prev predictive cell
-         *   - if in active column
-         *     - mark it as active
-         *     - mark it as winner cell
-         *  	 - mark column as predicted
-         *
-         * - if orphan decay active
-         *   - for each prev matching cell
-         *     - if not in active column
-         *       - mark it as an predicted but inactive cell
-         *
-         * @param prevPredictiveCells   Indices of predictive cells in `t-1`
-         * @param prevMatchingCells     Indices of matching cells in `t-1`
-         * @param activeColumns         Indices of active columns in `t`
-         *
-         * @return (tuple)Contains:
-         *  `activeCells`               (set),
-         *  `winnerCells`               (set),
-         *  `predictedColumns`          (set),
-         *  `predictedInactiveCells`    (set)
-         */
-        virtual tuple<set<Cell>, set<Cell>, set<UInt>, set<Cell>>
-          activateCorrectlyPredictiveCells(
-            set<Cell>& prevPredictiveCells,
-            set<Cell>& prevMatchingCells,
-            set<UInt>& activeColumns);
-
-        /**
-         * Phase 2 : Burst unpredicted columns.
-         *
-         * Pseudocode :
-         *
-         * - for each unpredicted active column
-         *   - mark all cells as active
-         *   - mark the best matching cell as winner cell
-         *     - (learning)
-         *       - if it has no matching segment
-         *         - (optimization) if there are prev winner cells
-         *           - add a segment to it
-         *       - mark the segment as learning
-         *
-         * @param activeColumns(set)       Indices of active columns in `t`
-         * @param predictedColumns(set)    Indices of predicted columns in `t`
-         * @param prevActiveCells(set)     Indices of active cells in `t-1`
-         * @param prevWinnerCells(set)     Indices of winner cells in `t-1`
-         * @param connections(Connections) Connectivity of layer
-         *
-         * @return (tuple)Contains:
-         *  `activeCells`      (set),
-         *  `winnerCells`      (set),
-         *  `learningSegments` (set)
-         */
-        virtual tuple<set<Cell>, set<Cell>, vector<Segment>> burstColumns(
-          set<UInt>& activeColumns,
-          set<UInt>& predictedColumns,
-          set<Cell>& prevActiveCells,
-          set<Cell>& prevWinnerCells,
-          Connections& connections);
-
-        /**
-         * Phase 3 : Perform learning by adapting segments.
-         *
-         * Pseudocode:
-         *
-         *   - (learning) for each prev active or learning segment
-         *     - if learning segment or from winner cell
-         *       - strengthen active synapses
-         *       - weaken inactive synapses
-         *     - if learning segment
-         *       - add some synapses to the segment
-         *         - subsample from prev winner cells
-         *
-         *   - if predictedSegmentDecrement > 0
-         *     - for each previously matching segment
-         *       - if cell is a predicted inactive cell
-         *         - weaken active synapses but don't touch inactive synapses
-         *
-         * @param prevActiveSegments(set)   Indices of active segments in `t-1`
-         * @param learningSegments(set)     Indices of learning segments in `t`
-         * @param prevActiveCells(set)      Indices of active cells in `t-1`
-         * @param winnerCells(set)          Indices of winner cells in `t`
-         * @param prevWinnerCells(set)      Indices of winner cells in `t-1`
-         * @param connections(Connections)  Connectivity of layer
-         * @param predictedInactiveCells    Indices of predicted inactive cells
-         * @param prevMatchingSegments      Indices of matching segments in `t-1`
-         */
-        virtual void learnOnSegments(
-          vector<Segment>& prevActiveSegments,
-          vector<Segment>& learningSegments,
-          set<Cell>& prevActiveCells,
-          set<Cell>& winnerCells,
-          set<Cell>& prevWinnerCells,
-          Connections& _connections,
-          set<Cell>& predictedInactiveCells,
-          vector<Segment>& prevMatchingSegments);
-
-        /**
-         * Phase 4 : Compute predictive cells due to lateral input
-         * on distal dendrites.
-         *
-         * Pseudocode:
-         *
-         *   - for each distal dendrite segment with activity >= activationThreshold
-         *     - mark the segment as active
-         *     - mark the cell as predictive
-         *
-         *   - if predictedSegmentDecrement > 0
-         *     - for each distal dendrite segment with unconnected
-         *       activity >=  minThreshold
-         *       - mark the segment as matching
-         *       - mark the cell as matching
-         *
-         * Forward propagates activity from active cells to the synapses
-         * that touch them, to determine which synapses are active.
-         *
-         *  @param activeCells(set)         Indices of active cells in `t`
-         *  @param connections(Connections) Connectivity of layer
-         *
-         *  @return (tuple)Contains:
-         *   `activeSegments`   (set),
-         *   `predictiveCells`  (set),
-         *   `matchingSegments` (set),
-         *   `matchingCells`    (set)
-         */
-        virtual tuple<vector<Segment>, set<Cell>, vector<Segment>, set<Cell>>
-          computePredictiveCells(
-            set<Cell>& activeCells, Connections& connections);
+          size_t activeColumnsSize,
+          const UInt activeColumns[],
+          bool learn = true);
 
 
         // ==============================
@@ -327,126 +235,13 @@ namespace nupic {
         // ==============================
 
         /**
-         * Gets the cell with the best matching segment
-         * (see `TM.bestMatchingSegment`) that has the
-         * largest number of active synapses of all
-         * best matching segments.
-         *
-         * If none were found, pick the least used cell
-         * (see `TM.leastUsedCell`)
-         *
-         * @param cells        Indices of cells
-         * @param activeCells  Indices of active cells
-         * @param connections  Connectivity of layer
-         *
-         * @return (tuple)Contains:
-         *   `foundCell`    (bool),
-         *   `bestCell`     (int),
-         *   `foundSegment` (bool),
-         *   `bestSegment`  (int)
-         */
-        tuple<bool, Cell, bool, Segment> bestMatchingCell(
-          vector<Cell>& cells,
-          set<Cell>& activeCells,
-          Connections& connections);
-
-        /**
-         * Gets the segment on a cell with the largest number of activate
-         * synapses, including all synapses with non - zero permanences.
-         *
-         * @param cell          Cell index
-         * @param activeCells   Indices of active cells
-         * @param connections   Connectivity of layer
-         *
-         * @return (tuple)Contains:
-         *  `segment`                 (int),
-         *  `connectedActiveSynapses` (set)
-         */
-        tuple<bool, Segment, Int> bestMatchingSegment(
-          Cell& cell,
-          set<Cell>& activeCells,
-          Connections& connections);
-
-        /**
-         * Gets the cell with the smallest number of segments.
-         * Break ties randomly.
-         *
-         * @param cells         Indices of cells
-         * @param connections   Connectivity of layer
-         *
-         * @return (int) Cell index
-         */
-        Cell leastUsedCell(
-          vector<Cell>& cells,
-          Connections& connections);
-
-        /**
-         * Returns the synapses on a segment that are active due to
-         * lateral input from active cells.
-         *
-         * @param segment       Segment index
-         * @param activeCells   Indices of active cells
-         * @param connections   Connectivity of layer
-         *
-         * @return (set) Indices of active synapses on segment
-         */
-        vector<Synapse> activeSynapsesForSegment(
-          Segment& segment,
-          set<Cell>& activeCells,
-          Connections& connections);
-
-        /**
-         * Updates synapses on segment.
-         * Strengthens active synapses; weakens inactive synapses.
-         *
-         * @param segment               Segment index
-         * @param activeSynapses        Indices of active synapses
-         * @param connections           Connectivity of layer
-         * @param permanenceIncrement   Amount to increment active synapses
-         *@param permanenceDecrement   Amount to decrement inactive synapses
-         */
-        void adaptSegment(
-          Segment& segment,
-          vector<Synapse>& activeSynapses,
-          Connections& connections,
-          Permanence permanenceIncrement,
-          Permanence permanenceDecrement);
-
-        /**
-         * Pick cells to form distal connections to.
-         *
-         * TODO : Respect topology and learningRadius
-         *
-         * @param n             Number of cells to pick
-         * @param segment       Segment index
-         * @param winnerCells   Indices of winner cells in `t`
-         * @param connections   Connectivity of layer
-         *
-         * @return (set) Indices of cells picked
-         */
-        set<Cell> pickCellsToLearnOn(
-          Int n,
-          Segment& segment,
-          set<Cell>& winnerCells,
-          Connections& connections);
-
-        /**
-         * Returns the index of the column that a cell belongs to.
-         *
-         * @param cell Cell index
-         *
-         * @return (int) Column index
-         */
-        Int columnForCell(Cell& cell);
-
-        /**
          * Returns the indices of cells that belong to a column.
          *
          * @param column Column index
          *
-         * @return (set) Cell indices
+         * @return (vector<CellIdx>) Cell indices
          */
-        vector<Cell> cellsForColumn(Int column);
+        vector<CellIdx> cellsForColumn(Int column);
 
         /**
          * Returns the number of cells in this layer.
@@ -456,13 +251,35 @@ namespace nupic {
         UInt numberOfCells(void);
 
         /**
-         * Maps cells to the columns they belong to
-         *
-         * @param cells Cells
-         *
-         * @return (dict) Mapping from columns to their cells in `cells`
-         */
-        map<Int, set<Cell>> mapCellsToColumns(set<Cell>& cells);
+        * Returns the indices of the active cells.
+        *
+        * @returns (std::vector<CellIdx>) Vector of indices of active cells.
+        */
+        vector<CellIdx> getActiveCells() const;
+
+        /**
+        * Returns the indices of the predictive cells.
+        *
+        * @returns (std::vector<CellIdx>) Vector of indices of predictive cells.
+        */
+        vector<CellIdx> getPredictiveCells() const;
+
+        /**
+        * Returns the indices of the winner cells.
+        *
+        * @returns (std::vector<CellIdx>) Vector of indices of winner cells.
+        */
+        vector<CellIdx> getWinnerCells() const;
+
+        /**
+        * Returns the indices of the matching cells.
+        *
+        * @returns (std::vector<CellIdx>) Vector of indices of matching cells.
+        */
+        vector<CellIdx> getMatchingCells() const;
+
+        vector<Segment> getActiveSegments() const;
+        vector<Segment> getMatchingSegments() const;
 
         /**
          * Returns the dimensions of the columns in the region.
@@ -518,7 +335,8 @@ namespace nupic {
         void setMinThreshold(UInt);
 
         /**
-         * Returns the maximum new synapse count.
+         * Returns the maximum number of synapses that can be added to a segment
+         * in a single time step.
          *
          * @returns Integer number of maximum new synapse count
          */
@@ -550,32 +368,11 @@ namespace nupic {
         void setPredictedSegmentDecrement(Permanence);
 
         /**
-         * Raises an error if column index is invalid.
-         *
-         * @param column Column index
-         */
-        bool _validateColumn(UInt column);
-
-        /**
          * Raises an error if cell index is invalid.
          *
          * @param cell Cell index
          */
-        bool _validateCell(Cell& cell);
-
-        /**
-         * Raises an error if segment is invalid.
-         *
-         * @param segment segment index
-         */
-        bool _validateSegment(Segment& segment);
-
-        /**
-         * Raises an error if segment is invalid.
-         *
-         * @param permanence (float) Permanence
-         */
-        bool _validatePermanence(Real permanence);
+        bool _validateCell(CellIdx cell);
 
         /**
          * Save (serialize) the current state of the spatial pooler to the
@@ -585,8 +382,8 @@ namespace nupic {
          */
         virtual void save(ostream& outStream) const;
 
-        virtual void write(ostream& stream) const;
-        virtual void write(TemporalMemoryProto::Builder& proto) const;
+        using Serializable::write;
+        virtual void write(TemporalMemoryProto::Builder& proto) const override;
 
         /**
          * Load (deserialize) and initialize the spatial pooler from the
@@ -596,8 +393,8 @@ namespace nupic {
          */
         virtual void load(istream& inStream);
 
-        virtual void read(istream& stream);
-        virtual void read(TemporalMemoryProto::Reader& proto);
+        using Serializable::read;
+        virtual void read(TemporalMemoryProto::Reader& proto) override;
 
         /**
          * Returns the number of bytes that a save operation would result in.
@@ -616,6 +413,15 @@ namespace nupic {
          * Print the main TM creation parameters
          */
         void printParameters();
+
+        /**
+         * Returns the index of the column that a cell belongs to.
+         *
+         * @param cell Cell index
+         *
+         * @return (int) Column index
+         */
+        Int columnForCell(CellIdx cell);
 
         /**
          * Print the given UInt array in a nice format
@@ -640,17 +446,16 @@ namespace nupic {
         Permanence permanenceDecrement_;
         Permanence predictedSegmentDecrement_;
 
-        UInt version_;
-        Random _rng;
+        vector<CellIdx> activeCells_;
+        vector<CellIdx> winnerCells_;
+        vector<Segment> activeSegments_;
+        vector<Segment> matchingSegments_;
+        vector<UInt32> numActiveConnectedSynapsesForSegment_;
+        vector<UInt32> numActivePotentialSynapsesForSegment_;
+
+        Random rng_;
 
       public:
-        set<Cell> activeCells;
-        set<Cell> winnerCells;
-        vector<Segment> activeSegments;
-        vector<Cell> predictiveCells;
-        set<UInt> predictedColumns;
-        vector<Segment> matchingSegments;
-        vector<Cell> matchingCells;
         Connections connections;
       };
 
@@ -659,4 +464,3 @@ namespace nupic {
 } // end namespace nta
 
 #endif // NTA_TEMPORAL_MEMORY_HPP
-

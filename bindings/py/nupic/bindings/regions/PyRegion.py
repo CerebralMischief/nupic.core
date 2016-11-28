@@ -24,11 +24,28 @@ This file defines the base class for Python regions.
 """
 
 import numpy
+import collections
 
 RealNumpyDType = numpy.float32
 from abc import ABCMeta, abstractmethod
 
+class DictReadOnlyWrapper(collections.Mapping):
+  """
+  Provides read-only access to a dict. When dict items are mutable, they can
+  still be mutated in-place, but dict items can't be reassigned.
+  """
 
+  def __init__(self, d):
+    self._d = d
+
+  def __iter__(self):
+    return iter(self._d)
+
+  def __len__(self):
+    return len(self._d)
+
+  def __getitem__(self, key):
+    return self._d[key]
 
 class PyRegion(object):
   """
@@ -150,6 +167,15 @@ class PyRegion(object):
     inputs: dict of numpy arrays (one per input)
     outputs: dict of numpy arrays (one per output)
     """
+
+
+  def guardedCompute(self, inputs, outputs):
+    """The C++ entry point to compute.
+
+    inputs: dict of numpy arrays (one per input)
+    outputs: dict of numpy arrays (one per output)
+    """
+    return self.compute(inputs, DictReadOnlyWrapper(outputs))
 
 
   def getOutputElementCount(self, name):
@@ -291,12 +317,28 @@ class PyRegion(object):
     raise NotImplementedError()
 
 
-  @classmethod
-  def convertProto(cls, pyRegionProto):
-    return pyRegionProto.regionImpl.cast_as(cls.getProtoType())
-
-
   def write(self, proto):
+    """Calls writeToProto on subclass after converting proto to specific type
+    using getProtoType().
+
+    proto: PyRegionProto capnproto object
+    """
+    regionImpl = proto.regionImpl.as_struct(self.getProtoType())
+    self.writeToProto(regionImpl)
+
+
+  @classmethod
+  def read(cls, proto):
+    """Calls readFromProto on subclass after converting proto to specific type
+    using getProtoType().
+
+    proto: PyRegionProto capnproto object
+    """
+    regionImpl = proto.regionImpl.as_struct(cls.getProtoType())
+    return cls.readFromProto(regionImpl)
+
+
+  def writeToProto(self, proto):
     """Write state to proto object.
 
     The type of proto is determined by getProtoType().
@@ -304,34 +346,13 @@ class PyRegion(object):
     raise NotImplementedError()
 
 
-  def read(self, proto):
+  @classmethod
+  def readFromProto(cls, proto):
     """Read state from proto object.
 
     The type of proto is determined by getProtoType().
     """
     raise NotImplementedError()
-
-
-  def writePyRegion(self, pyRegionProto):
-    """Write state to generic PyRegionProto instance.
-
-    This is called by the C code. It converts the input to the proto type
-    understood by the region implementation and passes it to that subclass's
-    write method.
-    """
-    proto = self.convertProto(pyRegionProto)
-    self.write(proto)
-
-
-  def readPyRegion(self, pyRegionProto):
-    """Read state from generic PyRegionProto instance.
-
-    This is called by the C code. It converts the input to the proto type
-    understood by the region implementation and passes it to that subclass's
-    read method.
-    """
-    proto = self.convertProto(pyRegionProto)
-    self.read(proto)
 
 
   def executeMethod(self, methodName, args):

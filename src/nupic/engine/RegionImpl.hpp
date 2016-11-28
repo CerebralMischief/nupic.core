@@ -41,6 +41,7 @@
 #include <capnp/any.h>
 
 #include <nupic/ntypes/ObjectModel.hpp> // IWriteBuffer
+#include <nupic/types/Serializable.hpp>
 
 namespace nupic
 {
@@ -55,7 +56,7 @@ namespace nupic
   class NodeSet;
   class BundleIO;
 
-  class RegionImpl
+  class RegionImpl : public Serializable<capnp::AnyPointer>
   {
   public:
 
@@ -87,6 +88,7 @@ namespace nupic
     virtual Real32 getParameterReal32(const std::string& name, Int64 index);
     virtual Real64 getParameterReal64(const std::string& name, Int64 index);
     virtual Handle getParameterHandle(const std::string& name, Int64 index);
+    virtual bool getParameterBool(const std::string& name, Int64 index);
 
     virtual void setParameterInt32(const std::string& name, Int64 index, Int32 value);
     virtual void setParameterUInt32(const std::string& name, Int64 index, UInt32 value);
@@ -95,6 +97,7 @@ namespace nupic
     virtual void setParameterReal32(const std::string& name, Int64 index, Real32 value);
     virtual void setParameterReal64(const std::string& name, Int64 index, Real64 value);
     virtual void setParameterHandle(const std::string& name, Int64 index, Handle value);
+    virtual void setParameterBool(const std::string& name, Int64 index, bool value);
 
     virtual void getParameterArray(const std::string& name, Int64 index, Array & array);
     virtual void setParameterArray(const std::string& name, Int64 index, const Array & array);
@@ -119,12 +122,12 @@ namespace nupic
     virtual void deserialize(BundleIO& bundle) = 0;
 
     // Serialize state with capnp
-    void writeToStream(std::ostream& stream) const;
+    using Serializable::write;
     virtual void write(capnp::AnyPointer::Builder& anyProto) const = 0;
 
     // Deserialize state from capnp. Must be called from deserializing
     // constructor.
-    void readFromStream(std::istream& stream);
+    using Serializable::read;
     virtual void read(capnp::AnyPointer::Reader& anyProto) = 0;
 
     /**

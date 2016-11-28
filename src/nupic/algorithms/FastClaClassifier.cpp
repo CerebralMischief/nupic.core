@@ -54,7 +54,8 @@ namespace nupic
           const vector<UInt>& steps, Real64 alpha, Real64 actValueAlpha,
           UInt verbosity) : alpha_(alpha), actValueAlpha_(actValueAlpha),
           learnIteration_(0), recordNumMinusLearnIteration_(0),
-          maxBucketIdx_(0), version_(Version), verbosity_(verbosity)
+          maxBucketIdx_(0), version_(claClassifierVersion),
+          verbosity_(verbosity)
       {
         for (const auto & step : steps)
         {
@@ -440,7 +441,7 @@ namespace nupic
         NTA_CHECK(marker == "~FastCLAClassifier");
 
         // Update the version number.
-        version_ = Version;
+        version_ = claClassifierVersion;
       }
 
       void FastCLAClassifier::write(ClaClassifierProto::Builder& proto) const
@@ -518,16 +519,6 @@ namespace nupic
         proto.setVerbosity(verbosity_);
       }
 
-      void FastCLAClassifier::write(ostream& stream) const
-      {
-        capnp::MallocMessageBuilder message;
-        auto proto = message.initRoot<ClaClassifierProto>();
-        write(proto);
-
-        kj::std::StdOutputStream out(stream);
-        capnp::writeMessage(out, message);
-      }
-
       void FastCLAClassifier::read(ClaClassifierProto::Reader& proto)
       {
         // Clean up the existing data structures before loading
@@ -595,15 +586,6 @@ namespace nupic
 
         version_ = proto.getVersion();
         verbosity_ = proto.getVerbosity();
-      }
-
-      void FastCLAClassifier::read(istream& stream)
-      {
-        kj::std::StdInputStream in(stream);
-
-        capnp::InputStreamMessageReader message(in);
-        auto proto = message.getRoot<ClaClassifierProto>();
-        read(proto);
       }
 
       bool FastCLAClassifier::operator==(const FastCLAClassifier& other) const
