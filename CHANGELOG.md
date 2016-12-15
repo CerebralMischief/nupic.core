@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.4.16
+
+* SpatialPooler: Stop rounding the boost factors
+* SpatialPooler: Rename "maxBoost" to "boostingStrength"
+* SpatialPooler: Remove minActiveDutyCycles and minPctActiveDutyCycles from spatial pooler
+
+## 0.4.15
+
+* SpatialPooler: Tweak the boost factor rounding to mimic numpy's rounding of float32s
+
+## 0.4.14
+
+* SpatialPooler: New boosting algorithm
+* SpatialPooler: Stop putting tie-break info into the overlaps. `getBoostedOverlaps()` return values are now more correct.
+* SpatialPooler: Use an EPSILON when comparing permanences to a threshold to avoid floating point differences.
+* SpatialPooler: Round the boost factors to two decimal places to avoid floating point differences.
+
 ## 0.4.13
 
 * Use VERSION file when generating docs.

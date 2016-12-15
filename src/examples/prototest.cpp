@@ -104,10 +104,8 @@ void testSP()
     UInt outputBaseline[numColumns];
     sp1.compute(input, true, outputBaseline);
 
-    UInt outputA[numColumns];
-    UInt outputC[numColumns];
-
     // A - First do iostream version
+    UInt outputA[numColumns];
     {
       SpatialPooler spTemp;
 
@@ -129,7 +127,14 @@ void testSP()
       testTimer.stop();
       timeA = timeA + testTimer.getElapsed();
     }
+
+    for (UInt i = 0; i < numColumns; ++i)
+    {
+      NTA_CHECK(outputBaseline[i] == outputA[i]);
+    }
+
     // C - Next do old version
+    UInt outputC[numColumns];
     {
       SpatialPooler spTemp;
 
@@ -154,9 +159,9 @@ void testSP()
 
     for (UInt i = 0; i < numColumns; ++i)
     {
-      NTA_ASSERT(outputBaseline[i] == outputA[i]);
-      NTA_ASSERT(outputBaseline[i] == outputC[i]);
+      NTA_CHECK(outputBaseline[i] == outputC[i]);
     }
+
   }
 
   remove("outA.proto");
@@ -189,11 +194,11 @@ void testRandomIOStream(UInt n)
     is.close();
 
     // Test
-    NTA_ASSERT(r1.getUInt32() == r2.getUInt32());
-    NTA_ASSERT(r1.getUInt32() == r2.getUInt32());
-    NTA_ASSERT(r1.getUInt32() == r2.getUInt32());
-    NTA_ASSERT(r1.getUInt32() == r2.getUInt32());
-    NTA_ASSERT(r1.getUInt32() == r2.getUInt32());
+    NTA_CHECK(r1.getUInt32() == r2.getUInt32());
+    NTA_CHECK(r1.getUInt32() == r2.getUInt32());
+    NTA_CHECK(r1.getUInt32() == r2.getUInt32());
+    NTA_CHECK(r1.getUInt32() == r2.getUInt32());
+    NTA_CHECK(r1.getUInt32() == r2.getUInt32());
   }
   testTimer.stop();
 
@@ -225,11 +230,11 @@ void testRandomManual(UInt n)
     is.close();
 
     // Test
-    NTA_ASSERT(r1.getUInt32() == r2.getUInt32());
-    NTA_ASSERT(r1.getUInt32() == r2.getUInt32());
-    NTA_ASSERT(r1.getUInt32() == r2.getUInt32());
-    NTA_ASSERT(r1.getUInt32() == r2.getUInt32());
-    NTA_ASSERT(r1.getUInt32() == r2.getUInt32());
+    NTA_CHECK(r1.getUInt32() == r2.getUInt32());
+    NTA_CHECK(r1.getUInt32() == r2.getUInt32());
+    NTA_CHECK(r1.getUInt32() == r2.getUInt32());
+    NTA_CHECK(r1.getUInt32() == r2.getUInt32());
+    NTA_CHECK(r1.getUInt32() == r2.getUInt32());
   }
   testTimer.stop();
 

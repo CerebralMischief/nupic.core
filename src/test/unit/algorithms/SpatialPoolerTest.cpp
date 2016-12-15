@@ -113,6 +113,19 @@ namespace {
     return true;
   }
 
+  bool check_vector_eq(vector<Real> vec1, vector<Real> vec2)
+  {
+    if (vec1.size() != vec2.size()) {
+      return false;
+    }
+    for (UInt i = 0; i < vec1.size(); i++) {
+      if (!almost_eq(vec1[i], vec2[i])) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   void check_spatial_eq(SpatialPooler sp1, SpatialPooler sp2)
   {
     UInt numColumns = sp1.getNumColumns();
@@ -132,7 +145,7 @@ namespace {
     ASSERT_TRUE(sp1.getStimulusThreshold() ==
               sp2.getStimulusThreshold());
     ASSERT_TRUE(sp1.getDutyCyclePeriod() == sp2.getDutyCyclePeriod());
-    ASSERT_TRUE(almost_eq(sp1.getMaxBoost(), sp2.getMaxBoost()));
+    ASSERT_TRUE(almost_eq(sp1.getBoostStrength(), sp2.getBoostStrength()));
     ASSERT_TRUE(sp1.getIterationNum() == sp2.getIterationNum());
     ASSERT_TRUE(sp1.getIterationLearnNum() ==
               sp2.getIterationLearnNum());
@@ -152,7 +165,7 @@ namespace {
     ASSERT_TRUE(almost_eq(sp1.getSynPermConnected(),
               sp2.getSynPermConnected()));
     ASSERT_TRUE(almost_eq(sp1.getMinPctOverlapDutyCycles(),
-              sp2.getMinPctActiveDutyCycles()));
+              sp2.getMinPctOverlapDutyCycles()));
 
 
     auto boostFactors1 = new Real[numColumns];
@@ -186,14 +199,6 @@ namespace {
     ASSERT_TRUE(check_vector_eq(minOverlapDutyCycles1, minOverlapDutyCycles2, numColumns));
     delete[] minOverlapDutyCycles1;
     delete[] minOverlapDutyCycles2;
-
-    auto minActiveDutyCycles1 = new Real[numColumns];
-    auto minActiveDutyCycles2 = new Real[numColumns];
-    sp1.getMinActiveDutyCycles(minActiveDutyCycles1);
-    sp2.getMinActiveDutyCycles(minActiveDutyCycles2);
-    ASSERT_TRUE(check_vector_eq(minActiveDutyCycles1, minActiveDutyCycles2, numColumns));
-    delete[] minActiveDutyCycles1;
-    delete[] minActiveDutyCycles2;
 
     for (UInt i = 0; i < numColumns; i++) {
       auto potential1 = new UInt[numInputs];
@@ -329,7 +334,6 @@ namespace {
     UInt numInputs = 5;
     setup(sp, numInputs, numColumns);
     sp.setMinPctOverlapDutyCycles(0.01);
-    sp.setMinPctActiveDutyCycles(0.02);
 
     Real initOverlapDuty[10] = {0.01, 0.001, 0.02, 0.3, 0.012, 0.0512,
                                 0.054, 0.221, 0.0873, 0.309};
@@ -342,47 +346,27 @@ namespace {
     sp.setGlobalInhibition(true);
     sp.setInhibitionRadius(2);
     sp.updateMinDutyCycles_();
-    Real resultMinActive[10];
     Real resultMinOverlap[10];
     sp.getMinOverlapDutyCycles(resultMinOverlap);
-    sp.getMinActiveDutyCycles(resultMinActive);
 
 
     sp.updateMinDutyCyclesGlobal_();
-    Real resultMinActiveGlobal[10];
     Real resultMinOverlapGlobal[10];
     sp.getMinOverlapDutyCycles(resultMinOverlapGlobal);
-    sp.getMinActiveDutyCycles(resultMinActiveGlobal);
 
     sp.updateMinDutyCyclesLocal_();
-    Real resultMinActiveLocal[10];
     Real resultMinOverlapLocal[10];
     sp.getMinOverlapDutyCycles(resultMinOverlapLocal);
-    sp.getMinActiveDutyCycles(resultMinActiveLocal);
 
-
-    ASSERT_TRUE(check_vector_eq(resultMinActive, resultMinActiveGlobal,
-                              numColumns));
-    ASSERT_TRUE(!check_vector_eq(resultMinActive, resultMinActiveLocal,
-                               numColumns));
     ASSERT_TRUE(check_vector_eq(resultMinOverlap, resultMinOverlapGlobal,
                               numColumns));
-    ASSERT_TRUE(!check_vector_eq(resultMinActive, resultMinActiveLocal,
-                               numColumns));
 
     sp.setGlobalInhibition(false);
     sp.updateMinDutyCycles_();
     sp.getMinOverlapDutyCycles(resultMinOverlap);
-    sp.getMinActiveDutyCycles(resultMinActive);
 
-    ASSERT_TRUE(!check_vector_eq(resultMinActive, resultMinActiveGlobal,
-                               numColumns));
-    ASSERT_TRUE(check_vector_eq(resultMinActive, resultMinActiveLocal,
-                              numColumns));
     ASSERT_TRUE(!check_vector_eq(resultMinOverlap, resultMinOverlapGlobal,
                                numColumns));
-    ASSERT_TRUE(check_vector_eq(resultMinActive, resultMinActiveLocal,
-                              numColumns));
 
   }
 
@@ -391,13 +375,11 @@ namespace {
     UInt numColumns = 5;
     UInt numInputs = 5;
     setup(sp, numInputs, numColumns);
-    Real minPctOverlap, minPctActive;
+    Real minPctOverlap;
 
     minPctOverlap = 0.01;
-    minPctActive = 0.02;
 
     sp.setMinPctOverlapDutyCycles(minPctOverlap);
-    sp.setMinPctActiveDutyCycles(minPctActive);
 
     Real overlapArr1[] =
       {0.06, 1, 3, 6, 0.5};
@@ -408,24 +390,18 @@ namespace {
     sp.setActiveDutyCycles(activeArr1);
 
     Real trueMinOverlap1 = 0.01 * 6;
-    Real trueMinActive1 = 0.02 * 0.6;
 
     sp.updateMinDutyCyclesGlobal_();
-    Real resultActive1[5];
     Real resultOverlap1[5];
     sp.getMinOverlapDutyCycles(resultOverlap1);
-    sp.getMinActiveDutyCycles(resultActive1);
     for (UInt i = 0; i < numColumns; i++) {
       ASSERT_TRUE(resultOverlap1[i] == trueMinOverlap1);
-      ASSERT_TRUE(resultActive1[i] == trueMinActive1);
     }
 
 
     minPctOverlap = 0.015;
-    minPctActive = 0.03;
 
     sp.setMinPctOverlapDutyCycles(minPctOverlap);
-    sp.setMinPctActiveDutyCycles(minPctActive);
 
     Real overlapArr2[] = {0.86, 2.4, 0.03, 1.6, 1.5};
     Real activeArr2[] = {0.16, 0.007, 0.15, 0.54, 0.13};
@@ -434,24 +410,18 @@ namespace {
     sp.setActiveDutyCycles(activeArr2);
 
     Real trueMinOverlap2 = 0.015 * 2.4;
-    Real trueMinActive2 = 0.03 * 0.54;
 
     sp.updateMinDutyCyclesGlobal_();
-    Real resultActive2[5];
     Real resultOverlap2[5];
     sp.getMinOverlapDutyCycles(resultOverlap2);
-    sp.getMinActiveDutyCycles(resultActive2);
     for (UInt i = 0; i < numColumns; i++) {
       ASSERT_TRUE(almost_eq(resultOverlap2[i],trueMinOverlap2));
-      ASSERT_TRUE(almost_eq(resultActive2[i],trueMinActive2));
     }
 
 
     minPctOverlap = 0.015;
-    minPctActive = 0.03;
 
     sp.setMinPctOverlapDutyCycles(minPctOverlap);
-    sp.setMinPctActiveDutyCycles(minPctActive);
 
     Real overlapArr3[] = {0, 0, 0, 0, 0};
     Real activeArr3[] = {0, 0, 0, 0, 0};
@@ -460,16 +430,12 @@ namespace {
     sp.setActiveDutyCycles(activeArr3);
 
     Real trueMinOverlap3 = 0;
-    Real trueMinActive3 = 0;
 
     sp.updateMinDutyCyclesGlobal_();
-    Real resultActive3[5];
     Real resultOverlap3[5];
     sp.getMinOverlapDutyCycles(resultOverlap3);
-    sp.getMinActiveDutyCycles(resultActive3);
     for (UInt i = 0; i < numColumns; i++) {
       ASSERT_TRUE(almost_eq(resultOverlap3[i],trueMinOverlap3));
-      ASSERT_TRUE(almost_eq(resultActive3[i],trueMinActive3));
     }
   }
 
@@ -491,9 +457,8 @@ namespace {
         /*synPermActiveInc*/ 0.05,
         /*synPermConnected*/ 0.1,
         /*minPctOverlapDutyCycles*/ 0.001,
-        /*minPctActiveDutyCycles*/ 0.001,
         /*dutyCyclePeriod*/ 1000,
-        /*maxBoost*/ 10.0,
+        /*boostStrength*/ 0.0,
         /*seed*/ 1,
         /*spVerbosity*/ 0,
         /*wrapAround*/ false);
@@ -506,22 +471,9 @@ namespace {
       Real overlapDutyArr[] = {0.7, 0.1, 0.5, 0.01, 0.78, 0.55, 0.1, 0.001};
       sp.setOverlapDutyCycles(overlapDutyArr);
 
-      sp.setMinPctActiveDutyCycles(0.1);
       sp.setMinPctOverlapDutyCycles(0.2);
 
       sp.updateMinDutyCyclesLocal_();
-
-      Real trueActiveArr[] = {0.1*0.9,
-                              0.1*0.9,
-                              0.1*0.7,
-                              0.1*0.7,
-                              0.1*0.7,
-                              0.1*0.1,
-                              0.1*0.12,
-                              0.1*0.12};
-      Real resultMinActiveArr[8];
-      sp.getMinActiveDutyCycles(resultMinActiveArr);
-      ASSERT_TRUE(check_vector_eq(resultMinActiveArr, trueActiveArr, numColumns));
 
       Real trueOverlapArr[] = {0.2*0.7,
                                0.2*0.7,
@@ -553,9 +505,8 @@ namespace {
         /*synPermActiveInc*/ 0.05,
         /*synPermConnected*/ 0.1,
         /*minPctOverlapDutyCycles*/ 0.001,
-        /*minPctActiveDutyCycles*/ 0.001,
         /*dutyCyclePeriod*/ 1000,
-        /*maxBoost*/ 10.0,
+        /*boostStrength*/ 10.0,
         /*seed*/ 1,
         /*spVerbosity*/ 0,
         /*wrapAround*/ true);
@@ -568,22 +519,9 @@ namespace {
       Real overlapDutyArr[] = {0.7, 0.1, 0.5, 0.01, 0.78, 0.55, 0.1, 0.001};
       sp.setOverlapDutyCycles(overlapDutyArr);
 
-      sp.setMinPctActiveDutyCycles(0.1);
       sp.setMinPctOverlapDutyCycles(0.2);
 
       sp.updateMinDutyCyclesLocal_();
-
-      Real trueActiveArr[] = {0.1*0.9,
-                              0.1*0.9,
-                              0.1*0.7,
-                              0.1*0.7,
-                              0.1*0.7,
-                              0.1*0.1,
-                              0.1*0.12,
-                              0.1*0.9};
-      Real resultMinActiveArr[8];
-      sp.getMinActiveDutyCycles(resultMinActiveArr);
-      ASSERT_TRUE(check_vector_eq(resultMinActiveArr, trueActiveArr, numColumns));
 
       Real trueOverlapArr[] = {0.2*0.7,
                                0.2*0.7,
@@ -1126,39 +1064,39 @@ namespace {
       {1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
     vector<Real> resultBoostFactors1(6, 0);
     sp.setGlobalInhibition(false);
-    sp.setMaxBoost(10);
+    sp.setBoostStrength(10);
     sp.setBoostFactors(initBoostFactors1);
     sp.setActiveDutyCycles(initActiveDutyCycles1);
     sp.updateBoostFactors_();
     sp.getBoostFactors(resultBoostFactors1.data());
-    ASSERT_EQ(trueBoostFactors1, resultBoostFactors1);
+    ASSERT_TRUE(check_vector_eq(trueBoostFactors1, resultBoostFactors1));
 
     Real initActiveDutyCycles2[] =
       {0.1, 0.3, 0.02, 0.04, 0.7, 0.12};
     Real initBoostFactors2[] =
       {0, 0, 0, 0, 0, 0};
     vector<Real> trueBoostFactors2 =
-      {3.11, 0.42, 6.91, 5.66, 0.01, 2.54};
+      {3.10599, 0.42035, 6.91251, 5.65949, 0.00769898, 2.54297};
     vector<Real> resultBoostFactors2(6, 0);
     sp.setGlobalInhibition(false);
-    sp.setMaxBoost(10);
+    sp.setBoostStrength(10);
     sp.setBoostFactors(initBoostFactors2);
     sp.setActiveDutyCycles(initActiveDutyCycles2);
     sp.updateBoostFactors_();
     sp.getBoostFactors(resultBoostFactors2.data());
 
-    ASSERT_EQ(trueBoostFactors2, resultBoostFactors2);
+    ASSERT_TRUE(check_vector_eq(trueBoostFactors2, resultBoostFactors2));
 
     Real initActiveDutyCycles3[] =
       {0.1, 0.3, 0.02, 0.04, 0.7, 0.12};
     Real initBoostFactors3[] =
       {0, 0, 0, 0, 0, 0};
     vector<Real> trueBoostFactors3 =
-      {1.25, 0.84, 1.47, 1.41, 0.38, 1.21};
+      { 1.25441, 0.840857, 1.47207, 1.41435, 0.377822, 1.20523 };
     vector<Real> resultBoostFactors3(6, 0);
     sp.setWrapAround(true);
     sp.setGlobalInhibition(false);
-    sp.setMaxBoost(2.0);
+    sp.setBoostStrength(2.0);
     sp.setInhibitionRadius(5);
     sp.setNumActiveColumnsPerInhArea(1);
     sp.setBoostFactors(initBoostFactors3);
@@ -1166,17 +1104,17 @@ namespace {
     sp.updateBoostFactors_();
     sp.getBoostFactors(resultBoostFactors3.data());
 
-    ASSERT_EQ(trueBoostFactors3, resultBoostFactors3);
+    ASSERT_TRUE(check_vector_eq(trueBoostFactors3, resultBoostFactors3));
 
     Real initActiveDutyCycles4[] =
       {0.1, 0.3, 0.02, 0.04, 0.7, 0.12};
     Real initBoostFactors4[] =
       {0, 0, 0, 0, 0, 0};
     vector<Real> trueBoostFactors4 =
-      {1.95, 0.26, 4.33, 3.55, 0.00, 1.59};
+      { 1.94773, 0.263597, 4.33476, 3.549, 0.00482795, 1.59467 };
     vector<Real> resultBoostFactors4(6, 0);
     sp.setGlobalInhibition(true);
-    sp.setMaxBoost(10);
+    sp.setBoostStrength(10);
     sp.setNumActiveColumnsPerInhArea(1);
     sp.setInhibitionRadius(3);
     sp.setBoostFactors(initBoostFactors4);
@@ -1184,7 +1122,7 @@ namespace {
     sp.updateBoostFactors_();
     sp.getBoostFactors(resultBoostFactors4.data());
 
-    ASSERT_EQ(trueBoostFactors4, resultBoostFactors4);
+    ASSERT_TRUE(check_vector_eq(trueBoostFactors3, resultBoostFactors3));
   }
 
   TEST(SpatialPoolerTest, testUpdateBookeepingVars)
@@ -1542,9 +1480,8 @@ namespace {
         /*synPermActiveInc*/ 0.05,
         /*synPermConnected*/ 0.1,
         /*minPctOverlapDutyCycles*/ 0.001,
-        /*minPctActiveDutyCycles*/ 0.001,
         /*dutyCyclePeriod*/ 1000,
-        /*maxBoost*/ 10.0,
+        /*boostStrength*/ 10.0,
         /*seed*/ 1,
         /*spVerbosity*/ 0,
         /*wrapAround*/ false);
@@ -1608,9 +1545,8 @@ namespace {
         /*synPermActiveInc*/ 0.05,
         /*synPermConnected*/ 0.1,
         /*minPctOverlapDutyCycles*/ 0.001,
-        /*minPctActiveDutyCycles*/ 0.001,
         /*dutyCyclePeriod*/ 1000,
-        /*maxBoost*/ 10.0,
+        /*boostStrength*/ 10.0,
         /*seed*/ 1,
         /*spVerbosity*/ 0,
         /*wrapAround*/ true);
@@ -1843,9 +1779,9 @@ namespace {
     perm = sp.initPermanence_(potential, 0);
     for (UInt i = 0; i < 8; i++)
       if (potential[i])
-        ASSERT_TRUE(perm[i] <= synPermConnected);
-      else
-        ASSERT_TRUE(perm[i] < 1e-5);
+        ASSERT_LE(perm[i], synPermConnected);
+      else        
+        ASSERT_LT(perm[i], 1e-5);
 
     inputDim[0] = 100;
     sp.initialize(inputDim,columnDim);
@@ -1879,8 +1815,8 @@ namespace {
 
     for (UInt i = 0; i < 100; i++) {
       Real permVal = sp.initPermConnected_();
-      ASSERT_TRUE(permVal >= synPermConnected &&
-                permVal <= synPermMax);
+      ASSERT_GE(permVal, synPermConnected);
+      ASSERT_LE(permVal, synPermMax);
     }
   }
 
@@ -1891,8 +1827,8 @@ namespace {
     sp.setSynPermConnected(synPermConnected);
     for (UInt i = 0; i < 100; i++) {
       Real permVal = sp.initPermNonConnected_();
-      ASSERT_TRUE(permVal >= 0 &&
-                permVal <= synPermConnected);
+      ASSERT_GE(permVal, 0);
+      ASSERT_LE(permVal, synPermConnected);
     }
   }
 
@@ -2180,9 +2116,8 @@ namespace {
                      /*synPermActiveInc*/ 0.05,
                      /*synPermConnected*/ 0.1,
                      /*minPctOverlapDutyCycles*/ 0.001,
-                     /*minPctActiveDutyCycles*/ 0.001,
                      /*dutyCyclePeriod*/ 1000,
-                     /*maxBoost*/ 10.0,
+                     /*boostStrength*/ 10.0,
                      /*seed*/ 1,
                      /*spVerbosity*/ 0,
                      /*wrapAround*/ true);
@@ -2211,9 +2146,8 @@ namespace {
                      /*synPermActiveInc*/ 0.05,
                      /*synPermConnected*/ 0.1,
                      /*minPctOverlapDutyCycles*/ 0.001,
-                     /*minPctActiveDutyCycles*/ 0.001,
                      /*dutyCyclePeriod*/ 1000,
-                     /*maxBoost*/ 10.0,
+                     /*boostStrength*/ 10.0,
                      /*seed*/ 1,
                      /*spVerbosity*/ 0,
                      /*wrapAround*/ true);
@@ -2242,9 +2176,8 @@ namespace {
                      /*synPermActiveInc*/ 0.05,
                      /*synPermConnected*/ 0.1,
                      /*minPctOverlapDutyCycles*/ 0.001,
-                     /*minPctActiveDutyCycles*/ 0.001,
                      /*dutyCyclePeriod*/ 1000,
-                     /*maxBoost*/ 10.0,
+                     /*boostStrength*/ 10.0,
                      /*seed*/ 1,
                      /*spVerbosity*/ 0,
                      /*wrapAround*/ true);
@@ -2276,9 +2209,8 @@ namespace {
                      /*synPermActiveInc*/ 0.05,
                      /*synPermConnected*/ 0.1,
                      /*minPctOverlapDutyCycles*/ 0.001,
-                     /*minPctActiveDutyCycles*/ 0.001,
                      /*dutyCyclePeriod*/ 1000,
-                     /*maxBoost*/ 10.0,
+                     /*boostStrength*/ 10.0,
                      /*seed*/ 1,
                      /*spVerbosity*/ 0,
                      /*wrapAround*/ true);

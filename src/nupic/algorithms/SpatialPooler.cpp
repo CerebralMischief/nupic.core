@@ -61,7 +61,6 @@ static Real round5_(const Real f)
 }
 
 
-
 class CoordinateConverter2D
 {
 
@@ -134,9 +133,8 @@ SpatialPooler::SpatialPooler(vector<UInt> inputDimensions,
                              Real synPermActiveInc,
                              Real synPermConnected,
                              Real minPctOverlapDutyCycles,
-                             Real minPctActiveDutyCycles,
                              UInt dutyCyclePeriod,
-                             Real maxBoost,
+                             Real boostStrength,
                              Int seed,
                              UInt spVerbosity,
                              bool wrapAround) : SpatialPooler::SpatialPooler()
@@ -153,9 +151,8 @@ SpatialPooler::SpatialPooler(vector<UInt> inputDimensions,
              synPermActiveInc,
              synPermConnected,
              minPctOverlapDutyCycles,
-             minPctActiveDutyCycles,
              dutyCyclePeriod,
-             maxBoost,
+             boostStrength,
              seed,
              spVerbosity,
              wrapAround);
@@ -267,14 +264,14 @@ void SpatialPooler::setDutyCyclePeriod(UInt dutyCyclePeriod)
   dutyCyclePeriod_ = dutyCyclePeriod;
 }
 
-Real SpatialPooler::getMaxBoost() const
+Real SpatialPooler::getBoostStrength() const
 {
-  return maxBoost_;
+  return boostStrength_;
 }
 
-void SpatialPooler::setMaxBoost(Real maxBoost)
+void SpatialPooler::setBoostStrength(Real boostStrength)
 {
-  maxBoost_ = maxBoost;
+  boostStrength_ = boostStrength;
 }
 
 UInt SpatialPooler::getIterationNum() const
@@ -397,16 +394,6 @@ void SpatialPooler::setMinPctOverlapDutyCycles(Real minPctOverlapDutyCycles)
   minPctOverlapDutyCycles_ = minPctOverlapDutyCycles;
 }
 
-Real SpatialPooler::getMinPctActiveDutyCycles() const
-{
-  return minPctActiveDutyCycles_;
-}
-
-void SpatialPooler::setMinPctActiveDutyCycles(Real minPctActiveDutyCycles)
-{
-  minPctActiveDutyCycles_ = minPctActiveDutyCycles;
-}
-
 void SpatialPooler::getBoostFactors(Real boostFactors[]) const
 {
   copy(boostFactors_.begin(), boostFactors_.end(), boostFactors);
@@ -450,18 +437,6 @@ void SpatialPooler::setMinOverlapDutyCycles(Real minOverlapDutyCycles[])
 {
   minOverlapDutyCycles_.assign(&minOverlapDutyCycles[0],
                                &minOverlapDutyCycles[numColumns_]);
-}
-
-void SpatialPooler::getMinActiveDutyCycles(Real minActiveDutyCycles[]) const
-{
-  copy(minActiveDutyCycles_.begin(), minActiveDutyCycles_.end(),
-       minActiveDutyCycles);
-}
-
-void SpatialPooler::setMinActiveDutyCycles(Real minActiveDutyCycles[])
-{
-  minActiveDutyCycles_.assign(&minActiveDutyCycles[0],
-                              &minActiveDutyCycles[numColumns_]);
 }
 
 void SpatialPooler::getPotential(UInt column, UInt potential[]) const
@@ -525,9 +500,8 @@ void SpatialPooler::initialize(vector<UInt> inputDimensions,
   Real synPermActiveInc,
   Real synPermConnected,
   Real minPctOverlapDutyCycles,
-  Real minPctActiveDutyCycles,
   UInt dutyCyclePeriod,
-  Real maxBoost,
+  Real boostStrength,
   Int seed,
   UInt spVerbosity,
   bool wrapAround)
@@ -570,9 +544,8 @@ void SpatialPooler::initialize(vector<UInt> inputDimensions,
   synPermBelowStimulusInc_ = synPermConnected / 10.0;
   synPermConnected_ = synPermConnected;
   minPctOverlapDutyCycles_ = minPctOverlapDutyCycles;
-  minPctActiveDutyCycles_ = minPctActiveDutyCycles;
   dutyCyclePeriod_ = dutyCyclePeriod;
-  maxBoost_ = maxBoost;
+  boostStrength_ = boostStrength;
   spVerbosity_ = spVerbosity;
   wrapAround_ = wrapAround;
   synPermMin_ = 0.0;
@@ -597,8 +570,7 @@ void SpatialPooler::initialize(vector<UInt> inputDimensions,
 
   overlapDutyCycles_.assign(numColumns_, 0);
   activeDutyCycles_.assign(numColumns_, 0);
-  minOverlapDutyCycles_.assign(numColumns_, 0.0);
-  minActiveDutyCycles_.assign(numColumns_, 0.0);
+  minOverlapDutyCycles_.assign(numColumns_, 0.0);  
   boostFactors_.assign(numColumns_, 1);
   overlaps_.resize(numColumns_);
   overlapsPct_.resize(numColumns_);
@@ -900,13 +872,9 @@ void SpatialPooler::updateMinDutyCycles_()
 }
 
 void SpatialPooler::updateMinDutyCyclesGlobal_()
-{
-  Real maxActiveDutyCycles = *max_element(activeDutyCycles_.begin(),
-                                          activeDutyCycles_.end());
+{  
   Real maxOverlapDutyCycles = *max_element(overlapDutyCycles_.begin(),
                                            overlapDutyCycles_.end());
-  fill(minActiveDutyCycles_.begin(), minActiveDutyCycles_.end(),
-       minPctActiveDutyCycles_ * maxActiveDutyCycles);
 
   fill(minOverlapDutyCycles_.begin(), minOverlapDutyCycles_.end(),
        minPctOverlapDutyCycles_ * maxOverlapDutyCycles);
@@ -936,7 +904,6 @@ void SpatialPooler::updateMinDutyCyclesLocal_()
       }
     }
 
-    minActiveDutyCycles_[i] = maxActiveDuty * minPctActiveDutyCycles_;
     minOverlapDutyCycles_[i] = maxOverlapDuty * minPctOverlapDutyCycles_;
   }
 }
@@ -1122,16 +1089,13 @@ void SpatialPooler::updateDutyCyclesHelper_(vector<Real>& dutyCycles,
 
 void SpatialPooler::updateBoostFactors_()
 {
-  if (maxBoost_ > 1.0)
-  {    
-    if (globalInhibition_)
-    {
-      updateBoostFactorsGlobal_();
-    }
-    else
-    {
-      updateBoostFactorsLocal_();
-    }
+  if (globalInhibition_)
+  {
+    updateBoostFactorsGlobal_();
+  }
+  else
+  {
+    updateBoostFactorsLocal_();
   }
 }
 
@@ -1153,12 +1117,9 @@ void SpatialPooler::updateBoostFactorsGlobal_()
 
   for (UInt i = 0; i < numColumns_; ++i)
   {
-    Real boostFactor = exp((targetDensity - activeDutyCycles_[i])* maxBoost_);
-
-    // Avoid floating point mismatches between implementations.
-    boostFactors_[i] = round(boostFactor * 100.0) / 100.0;
+    boostFactors_[i] = exp((targetDensity - activeDutyCycles_[i])
+                           * boostStrength_);
   }
- 
 }
 
 void SpatialPooler::updateBoostFactorsLocal_()
@@ -1175,7 +1136,7 @@ void SpatialPooler::updateBoostFactorsLocal_()
       {
         localActivityDensity += activeDutyCycles_[neighbor];
         numNeighbors += 1;
-      }      
+      }
     }
     else
     {
@@ -1184,13 +1145,12 @@ void SpatialPooler::updateBoostFactorsLocal_()
       {
         localActivityDensity += activeDutyCycles_[neighbor];
         numNeighbors += 1;
-      }            
+      }
     }
-    Real targetDensity = localActivityDensity / numNeighbors;
-    Real boostFactor = exp((targetDensity - activeDutyCycles_[i]) * maxBoost_);
 
-    // Avoid floating point mismatches between implementations.
-    boostFactors_[i] = round(boostFactor * 100.0) / 100.0;
+    Real targetDensity = localActivityDensity / numNeighbors;
+    boostFactors_[i] = exp((targetDensity - activeDutyCycles_[i]) 
+                           * boostStrength_);
   }
 
 }
@@ -1405,6 +1365,14 @@ UInt SpatialPooler::persistentSize() const
   return s.str().size();
 }
 
+template<typename FloatType>
+static void saveFloat_(ostream& outStream, FloatType v)
+{
+  outStream << std::setprecision(std::numeric_limits<FloatType>::max_digits10)
+            << v
+            << " ";
+}
+
 void SpatialPooler::save(ostream& outStream) const
 {
   // Write a starting marker and version.
@@ -1414,31 +1382,37 @@ void SpatialPooler::save(ostream& outStream) const
   // Store the simple variables first.
   outStream << numInputs_ << " "
             << numColumns_ << " "
-            << potentialRadius_ << " "
-            << potentialPct_ << " "
-            << initConnectedPct_ << " "
-            << globalInhibition_ << " "
-            << numActiveColumnsPerInhArea_ << " "
-            << localAreaDensity_ << " "
-            << stimulusThreshold_ << " "
+            << potentialRadius_ << " ";
+
+  saveFloat_(outStream, potentialPct_);
+  saveFloat_(outStream, initConnectedPct_);
+
+  outStream << globalInhibition_ << " "
+            << numActiveColumnsPerInhArea_ << " ";
+
+  saveFloat_(outStream, localAreaDensity_);
+
+  outStream << stimulusThreshold_ << " "
             << inhibitionRadius_ << " "
-            << dutyCyclePeriod_ << " "
-            << maxBoost_ << " "
-            << iterationNum_ << " "
+            << dutyCyclePeriod_ << " ";
+
+  saveFloat_(outStream, boostStrength_);
+
+  outStream << iterationNum_ << " "
             << iterationLearnNum_ << " "
             << spVerbosity_ << " "
-            << updatePeriod_ << " "
+            << updatePeriod_ << " ";
 
-            << synPermMin_ << " "
-            << synPermMax_ << " "
-            << synPermTrimThreshold_ << " "
-            << synPermInactiveDec_ << " "
-            << synPermActiveInc_ << " "
-            << synPermBelowStimulusInc_ << " "
-            << synPermConnected_ << " "
-            << minPctOverlapDutyCycles_ << " "
-            << minPctActiveDutyCycles_ << " "
-            << wrapAround_ << " "
+  saveFloat_(outStream, synPermMin_);
+  saveFloat_(outStream, synPermMax_);
+  saveFloat_(outStream, synPermTrimThreshold_);
+  saveFloat_(outStream, synPermInactiveDec_);
+  saveFloat_(outStream, synPermActiveInc_);
+  saveFloat_(outStream, synPermBelowStimulusInc_);
+  saveFloat_(outStream, synPermConnected_);
+  saveFloat_(outStream, minPctOverlapDutyCycles_);
+
+  outStream << wrapAround_ << " "
             << endl;
 
   // Store vectors.
@@ -1458,31 +1432,25 @@ void SpatialPooler::save(ostream& outStream) const
 
   for (UInt i = 0; i < numColumns_; i++)
   {
-    outStream << boostFactors_[i] << " ";
+    saveFloat_(outStream, boostFactors_[i]);
   }
   outStream << endl;
 
   for (UInt i = 0; i < numColumns_; i++)
   {
-    outStream << overlapDutyCycles_[i] << " ";
+    saveFloat_(outStream, overlapDutyCycles_[i]);
   }
   outStream << endl;
 
   for (UInt i = 0; i < numColumns_; i++)
   {
-    outStream << activeDutyCycles_[i] << " ";
+    saveFloat_(outStream, activeDutyCycles_[i]);
   }
   outStream << endl;
 
   for (UInt i = 0; i < numColumns_; i++)
   {
-    outStream << minOverlapDutyCycles_[i] << " ";
-  }
-  outStream << endl;
-
-  for (UInt i = 0; i < numColumns_; i++)
-  {
-    outStream << minActiveDutyCycles_[i] << " ";
+    saveFloat_(outStream, minOverlapDutyCycles_[i]);
   }
   outStream << endl;
 
@@ -1516,7 +1484,8 @@ void SpatialPooler::save(ostream& outStream) const
     permanences_.getRowToSparse(i, perm.begin());
     for (auto & elem : perm)
     {
-      outStream << elem.first << " " << elem.second << " ";
+      outStream << elem.first << " ";
+      saveFloat_(outStream, elem.second);
     }
     outStream << endl;
   }
@@ -1558,7 +1527,7 @@ void SpatialPooler::load(istream& inStream)
            >> stimulusThreshold_
            >> inhibitionRadius_
            >> dutyCyclePeriod_
-           >> maxBoost_
+           >> boostStrength_
            >> iterationNum_
            >> iterationLearnNum_
            >> spVerbosity_
@@ -1571,8 +1540,7 @@ void SpatialPooler::load(istream& inStream)
            >> synPermActiveInc_
            >> synPermBelowStimulusInc_
            >> synPermConnected_
-           >> minPctOverlapDutyCycles_
-           >> minPctActiveDutyCycles_;
+           >> minPctOverlapDutyCycles_;
   if (version == 1)
   {
     wrapAround_ = true;
@@ -1621,12 +1589,6 @@ void SpatialPooler::load(istream& inStream)
   for (UInt i = 0; i < numColumns_; i++)
   {
     inStream >> minOverlapDutyCycles_[i];
-  }
-
-  minActiveDutyCycles_.resize(numColumns_);
-  for (UInt i = 0; i < numColumns_; i++)
-  {
-    inStream >> minActiveDutyCycles_[i];
   }
 
   tieBreaker_.resize(numColumns_);
@@ -1712,9 +1674,8 @@ void SpatialPooler::write(SpatialPoolerProto::Builder& proto) const
   proto.setSynPermBelowStimulusInc(synPermBelowStimulusInc_);
   proto.setSynPermConnected(synPermConnected_);
   proto.setMinPctOverlapDutyCycles(minPctOverlapDutyCycles_);
-  proto.setMinPctActiveDutyCycles(minPctActiveDutyCycles_);
   proto.setDutyCyclePeriod(dutyCyclePeriod_);
-  proto.setMaxBoost(maxBoost_);
+  proto.setBoostStrength(boostStrength_);
   proto.setWrapAround(wrapAround_);
   proto.setSpVerbosity(spVerbosity_);
 
@@ -1768,12 +1729,6 @@ void SpatialPooler::write(SpatialPoolerProto::Builder& proto) const
     minOverlapDutyCycles.set(i, minOverlapDutyCycles_[i]);
   }
 
-  auto minActiveDutyCycles = proto.initMinActiveDutyCycles(numColumns_);
-  for (UInt i = 0; i < numColumns_; ++i)
-  {
-    minActiveDutyCycles.set(i, minActiveDutyCycles_[i]);
-  }
-
   auto boostFactors = proto.initBoostFactors(numColumns_);
   for (UInt i = 0; i < numColumns_; ++i)
   {
@@ -1816,9 +1771,8 @@ void SpatialPooler::read(SpatialPoolerProto::Reader& proto)
   synPermBelowStimulusInc_ = proto.getSynPermBelowStimulusInc();
   synPermConnected_ = proto.getSynPermConnected();
   minPctOverlapDutyCycles_ = proto.getMinPctOverlapDutyCycles();
-  minPctActiveDutyCycles_ = proto.getMinPctActiveDutyCycles();
   dutyCyclePeriod_ = proto.getDutyCyclePeriod();
-  maxBoost_ = proto.getMaxBoost();
+  boostStrength_ = proto.getBoostStrength();
   wrapAround_ = proto.getWrapAround();
   spVerbosity_ = proto.getSpVerbosity();
 
@@ -1877,12 +1831,6 @@ void SpatialPooler::read(SpatialPoolerProto::Reader& proto)
     minOverlapDutyCycles_.push_back(value);
   }
 
-  minActiveDutyCycles_.clear();
-  for (auto value : proto.getMinActiveDutyCycles())
-  {
-    minActiveDutyCycles_.push_back(value);
-  }
-
   boostFactors_.clear();
   for (auto value : proto.getBoostFactors())
   {
@@ -1919,10 +1867,8 @@ void SpatialPooler::printParameters() const
     << "synPermConnected            = " << getSynPermConnected() << std::endl
     << "minPctOverlapDutyCycles     = "
                 << getMinPctOverlapDutyCycles() << std::endl
-    << "minPctActiveDutyCycles      = "
-                << getMinPctActiveDutyCycles() << std::endl
     << "dutyCyclePeriod             = " << getDutyCyclePeriod() << std::endl
-    << "maxBoost                    = " << getMaxBoost() << std::endl
+    << "boostStrength               = " << getBoostStrength() << std::endl
     << "spVerbosity                 = " << getSpVerbosity() << std::endl
     << "wrapAround                  = " << getWrapAround() << std::endl
     << "version                     = " << version() << std::endl;
